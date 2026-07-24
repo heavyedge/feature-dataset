@@ -84,3 +84,8 @@ $(foreach \
 		) \
 	) \
 )
+
+# e.g., _temp/v1/shape-features/mean_profiles/dataset1.minirocket.sigmoid.csv
+_temp/v1/shape-features/%.csv: _temp/v1/global-features/%.csv _temp/v1/local-features/%.csv
+	mkdir -p $(@D)
+	python3 -c "import pandas as pd; pd.concat(list(map(pd.read_csv, '$^'.split(' '))), axis=1).to_csv('$@', index=False)"
