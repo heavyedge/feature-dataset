@@ -45,6 +45,16 @@ git config filter.nbstripout.smudge cat
 git config filter.nbstripout.required true
 ```
 
+### Testing
+
+Setting the `HEAVYEDGE_TEST_MODE` environment variable to `1` downloades and preprocesses only a small subset of data for testing purposes.
+
+```sh
+export HEAVYEDGE_TEST_MODE=1
+./setup.sh
+make
+```
+
 ### Versioning policy
 
 This repository follows semantic versioning with [Python version specifiers](https://packaging.python.org/en/latest/specifications/version-specifiers/):

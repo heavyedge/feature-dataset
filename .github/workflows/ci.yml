@@ -54,6 +54,6 @@ jobs:
           python-version: "3.12"
 
       - name: set up the environment
-        run: ./setup.sh
+        run: HEAVYEDGE_TEST_MODE=1 ./setup.sh
         env:
           HUGGINGFACE_TOKEN: ${{ secrets.HUGGINGFACE_TOKEN }}

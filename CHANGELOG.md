@@ -13,6 +13,10 @@ Shape features:
 - `b`
 - `phi`
 
-Source:
+Datasets:
 
 - `jeesoo9595/heavyedge-profiles:v1.0.0rc1`
+
+Classification model:
+
+- `jeesoo9595/heavyedge-classify-v1:v1.0.0a1`
