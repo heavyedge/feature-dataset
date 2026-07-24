@@ -11,7 +11,16 @@ HEAVYEDGE_BATCH_SIZE ?= 100
 
 all: datasets
 
-datasets: dataset-v1
+datasets: \
+$(foreach \
+	target, \
+	$(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),mean_profiles,profiles mean_profiles), \
+	$(foreach \
+		dataset, \
+		$(call DATASETS_v1,$(target)), \
+		datasets/v1/shape-features/$(target)/$(dataset).csv \
+	) \
+)
 
 dataset-v1:
 
@@ -89,3 +98,7 @@ $(foreach \
 _temp/v1/shape-features/%.csv: _temp/v1/global-features/%.csv _temp/v1/local-features/%.csv
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd; pd.concat(list(map(pd.read_csv, '$^'.split(' '))), axis=1).to_csv('$@', index=False)"
+
+datasets/v1/shape-features/%.csv: _temp/v1/shape-features/%.minirocket.sigmoid.csv
+	mkdir -p $(@D)
+	cp $< $@
