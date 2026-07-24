@@ -59,3 +59,8 @@ $(foreach \
 _temp/v1/global-features/%.csv: _temp/v1/class_proba/%.csv config/v1/features-global.yml
 	mkdir -p $(@D)
 	heavyedge --log-level=INFO features-global $< --config $(lastword $^) -o $@
+
+# e.g., _temp/v1/wet-thickness/dataset1.npy
+_temp/v1/wet-thickness/%.npy: scripts/v1/wet-thickness.py _data/v1/process_variables/%.csv _data/v1/datapackage.json
+	mkdir -p $(@D)
+	python3 $^ -o $@

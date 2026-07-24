@@ -5,9 +5,9 @@ curl -LsSf https://hf.co/cli/install.sh | bash
 
 (
   if [ "${HEAVYEDGE_TEST_MODE:-}" = "1" ]; then
-      include="--include v1/profiles/dataset1.tar.gz --include v1/mean_profiles/dataset1.tar.gz --include v1/process_variables/dataset1.csv"
+      include="--include v1/profiles/dataset1.tar.gz --include v1/mean_profiles/dataset1.tar.gz --include v1/process_variables/dataset1.csv --include v1/datapackage.json"
   else
-      include="--include v1/profiles/*.tar.gz --include v1/mean_profiles/*.tar.gz --include v1/process_variables/*.csv"
+      include="--include v1/profiles/*.tar.gz --include v1/mean_profiles/*.tar.gz --include v1/process_variables/*.csv --include v1/datapackage.json"
   fi
   "$HOME/.local/bin/hf" download jeesoo9595/heavyedge-profiles --token "$HUGGINGFACE_TOKEN" --repo-type dataset --revision v1.0.0rc2 $include --local-dir _data/
   for dataset in _data/v1/profiles/*.tar.gz; do

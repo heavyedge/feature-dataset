@@ -1,5 +1,1 @@
-sigma: 32
 target-indices: [1]
-type1-indices: [1, 2]
-type2-indices: [3, 4]
-type3-indices: [5, 6]
