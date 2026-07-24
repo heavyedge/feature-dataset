@@ -6,18 +6,24 @@ curl -LsSf https://hf.co/cli/install.sh | bash
 
 (
   if [ "${HEAVYEDGE_TEST_MODE:-}" = "1" ]; then
-      profiles="v1/mean_profiles/dataset1.tar.gz"
+      include="--include v1/profiles/dataset1.tar.gz --include v1/mean_profiles/dataset1.tar.gz"
   else
-      profiles="v1/mean_profiles/*.tar.gz"
+      include="--include v1/profiles/*.tar.gz --include v1/mean_profiles/*.tar.gz"
   fi
-  "$HOME/.local/bin/hf" download jeesoo9595/heavyedge-profiles --repo-type dataset --revision v1.0.0rc1 --include "$profiles" --local-dir _data/
+  "$HOME/.local/bin/hf" download jeesoo9595/heavyedge-profiles --repo-type dataset --revision v1.0.0rc1 $include --local-dir _data/
+  for dataset in _data/v1/profiles/*.tar.gz; do
+      stem=$(basename "$dataset" .tar.gz)
+      dirname=_data/v1/profiles/"$stem"
+      mkdir -p "$dirname"
+      tar -xzf "$dataset" -C "$dirname"
+  done
   for dataset in _data/v1/mean_profiles/*.tar.gz; do
       stem=$(basename "$dataset" .tar.gz)
       dirname=_data/v1/mean_profiles/"$stem"
       mkdir -p "$dirname"
       tar -xzf "$dataset" -C "$dirname"
   done
-  rm -f _data/v1/mean_profiles/*.tar.gz
+  rm -f _data/v1/profiles/*.tar.gz _data/v1/mean_profiles/*.tar.gz
 ) &
 profiles_pid=$!
 
