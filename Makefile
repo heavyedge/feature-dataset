@@ -5,7 +5,7 @@
 # Dummy target to ensure that prerequisite files are built.
 .FORCE:
 
-DATASETS_v1 := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),dataset1,$(shell ls -d _data/v1/profiles/dataset* | xargs -n 1 basename))
+DATASETS_v1 = $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),dataset1,$(shell ls -d _data/v1/$(1)/dataset* | xargs -n 1 basename))
 CALIBRATION_METHODS_v1 := sigmoid isotonic sigmoid_ovo isotonic_ovo temperature
 HEAVYEDGE_BATCH_SIZE ?= 100
 
@@ -30,7 +30,7 @@ $(foreach \
 	profiles mean_profiles, \
 	$(foreach \
 		dataset, \
-		$(DATASETS_v1), \
+		$(call DATASETS_v1,$(target)), \
 		$(eval $(call MERGE_PROFILES_v1,$(target),$(dataset))) \
 	) \
 )
@@ -46,7 +46,7 @@ $(foreach \
 	profiles mean_profiles, \
 	$(foreach \
 		dataset, \
-		$(DATASETS_v1), \
+		$(call DATASETS_v1,$(target)), \
 		$(foreach \
 			method, \
 			$(CALIBRATION_METHODS_v1), \
@@ -76,7 +76,7 @@ $(foreach \
 	profiles mean_profiles, \
 	$(foreach \
 		dataset, \
-		$(DATASETS_v1), \
+		$(call DATASETS_v1,$(target)), \
 		$(foreach \
 			method, \
 			$(CALIBRATION_METHODS_v1), \
