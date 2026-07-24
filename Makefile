@@ -54,3 +54,8 @@ $(foreach \
 		) \
 	) \
 )
+
+# e.g., _temp/v1/global-features/mean_profiles/dataset1.minirocket.sigmoid.csv
+_temp/v1/global-features/%.csv: _temp/v1/class_proba/%.csv config/v1/features-global.yml
+	mkdir -p $(@D)
+	heavyedge --log-level=INFO features-global $< --config $(lastword $^) -o $@
