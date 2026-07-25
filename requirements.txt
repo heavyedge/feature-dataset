@@ -1,0 +1,4 @@
+heavyedge-classify==1.4.0
+heavyedge-features==1.0.1
+pandas
+pint
