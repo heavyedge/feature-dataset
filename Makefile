@@ -20,7 +20,7 @@ $(foreach \
 	$(foreach \
 		dataset, \
 		$(call DATASETS_v1,$(target)), \
-		datasets/v1/shape-features/$(target)/$(dataset).csv \
+		datasets/v1/shape_features/$(target)/$(dataset).csv \
 	) \
 )
 
@@ -94,11 +94,11 @@ $(foreach \
 	) \
 )
 
-# e.g., _temp/v1/shape-features/mean_profiles/dataset1.minirocket.sigmoid.csv
-_temp/v1/shape-features/%.csv: _temp/v1/global-features/%.csv _temp/v1/local-features/%.csv
+# e.g., _temp/v1/shape_features/mean_profiles/dataset1.minirocket.sigmoid.csv
+_temp/v1/shape_features/%.csv: _temp/v1/global-features/%.csv _temp/v1/local-features/%.csv
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd; pd.concat(list(map(pd.read_csv, '$^'.split(' '))), axis=1).to_csv('$@', index=False)"
 
-datasets/v1/shape-features/%.csv: _temp/v1/shape-features/%.minirocket.sigmoid.csv
+datasets/v1/shape_features/%.csv: _temp/v1/shape_features/%.minirocket.sigmoid.csv
 	mkdir -p $(@D)
 	cp $< $@
