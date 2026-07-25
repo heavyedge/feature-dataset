@@ -19,4 +19,9 @@ Datasets:
 
 Classification model:
 
+- `heavyedge-classify==1.4.0`
 - `jeesoo9595/heavyedge-classify-v1:v1.0.0a1`
+
+Feature extractor:
+
+- `heavyedge-features==1.0.1`
