@@ -60,3 +60,92 @@ jobs:
 
       - name: test build
         run: HEAVYEDGE_TEST_MODE=1 make
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: raw-dataset
+          path: _data/v1/mean_profiles/dataset1/001*
+          retention-days: 1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: preprocessed-dataset
+          path: datasets/v1/shape_features/mean_profiles/dataset1.csv
+          retention-days: 1
+
+  image-dev:
+
+    needs: test
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: raw-dataset
+          path: _data/v1/mean_profiles/dataset1
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: preprocessed-dataset
+          path: datasets/v1/shape_features/mean_profiles/dataset1.csv
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          push: false
+          target: dev
+          cache-from: type=gha,scope=feature-dataset-dev
+          cache-to: type=gha,mode=max,scope=feature-dataset-dev
+          tags: heavyedge-feature-dataset:dev-ci
+
+      - name: Test Docker image
+        run: |
+            docker run --rm heavyedge-feature-dataset:dev-ci sh -c '[ -d "_data" ] && [ -d "datasets/v1" ]'
+
+
+  image-base:
+
+    needs: test
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: raw-dataset
+          path: _data/v1/mean_profiles/dataset1
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: preprocessed-dataset
+          path: datasets/v1/shape_features/mean_profiles/dataset1.csv
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          push: false
+          target: base
+          cache-from: type=gha,scope=feature-dataset
+          cache-to: type=gha,mode=max,scope=feature-dataset
+          tags: heavyedge-feature-dataset:ci
+
+      - name: Test Docker image
+        run: |
+            docker run --rm heavyedge-feature-dataset:ci sh -c '[ ! -d "_data" ] && [ -d "datasets/v1" ]'
