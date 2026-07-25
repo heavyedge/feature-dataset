@@ -11,7 +11,9 @@ HEAVYEDGE_BATCH_SIZE ?= 100
 
 all: datasets
 
-datasets: \
+datasets: dataset-v1
+
+dataset-v1: \
 $(foreach \
 	target, \
 	$(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),mean_profiles,profiles mean_profiles), \
@@ -21,8 +23,6 @@ $(foreach \
 		datasets/v1/shape-features/$(target)/$(dataset).csv \
 	) \
 )
-
-dataset-v1:
 
 clean:
 	rm -rf _temp datasets/v*
