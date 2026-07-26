@@ -64,21 +64,16 @@ $(foreach \
 	) \
 )
 
-# e.g., _temp/v1/wet-thickness/dataset1.npy
-_temp/v1/wet-thickness/%.npy: scripts/v1/wet-thickness.py _data/v1/process_variables/%.csv _data/v1/datapackage.json
+# e.g., _temp/v1/wet-thickness/dataset1.csv
+_temp/v1/wet-thickness/%.csv: scripts/v1/wet-thickness.py _data/v1/process_variables/%.csv _data/v1/datapackage.json
 	mkdir -p $(@D)
 	python3 $^ -o $@
 
-# e.g., _temp/v1/global-features/mean_profiles/dataset1.minirocket.sigmoid.csv
-_temp/v1/global-features/%.csv: _temp/v1/class_proba/%.csv config/v1/features-global.yml
-	mkdir -p $(@D)
-	heavyedge --log-level=INFO features-global $< --config $(lastword $^) -o $@
-
-# e.g., _temp/v1/local-features/mean_profiles/dataset1.minirocket.sigmoid.csv
-define LOCAL_FEATURES_v1
-_temp/v1/local-features/$(1)/$(2).minirocket.$(3).csv: _temp/v1/$(1)/$(2).h5 _temp/v1/class_proba/$(1)/$(2).minirocket.$(3).csv _temp/v1/wet-thickness/$(2).npy config/v1/features-local.yml 
+# e.g., _temp/v1/shape-features/mean_profiles/dataset1.minirocket.sigmoid.csv
+define SHAPE_FEATURES_v1
+_temp/v1/shape-features/$(1)/$(2).minirocket.$(3).csv: _temp/v1/$(1)/$(2).h5 _temp/v1/wet-thickness/$(2).csv _temp/v1/class_proba/$(1)/$(2).minirocket.$(3).csv config/v1/shape-features.yml 
 	mkdir -p $$(@D)
-	heavyedge --log-level=INFO features-local $$(wordlist 1,3,$$^) --config $$(lastword $$^) -o $$@
+	heavyedge --log-level=INFO shape-features $$(wordlist 1,3,$$^) --config $$(lastword $$^) -o $$@
 endef
 $(foreach \
 	target, \
@@ -89,15 +84,10 @@ $(foreach \
 		$(foreach \
 			method, \
 			$(CALIBRATION_METHODS_v1), \
-			$(eval $(call LOCAL_FEATURES_v1,$(target),$(dataset),$(method))) \
+			$(eval $(call SHAPE_FEATURES_v1,$(target),$(dataset),$(method))) \
 		) \
 	) \
 )
-
-# e.g., _temp/v1/shape_features/mean_profiles/dataset1.minirocket.sigmoid.csv
-_temp/v1/shape_features/%.csv: _temp/v1/global-features/%.csv _temp/v1/local-features/%.csv
-	mkdir -p $(@D)
-	python3 -c "import pandas as pd; pd.concat(list(map(pd.read_csv, '$^'.split(' '))), axis=1).to_csv('$@', index=False)"
 
 datasets/v1/shape_features/%.csv: _temp/v1/shape_features/%.minirocket.sigmoid.csv
 	mkdir -p $(@D)

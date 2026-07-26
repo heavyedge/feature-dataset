@@ -2,14 +2,13 @@ import argparse
 import json
 import pathlib
 
-import numpy as np
 import pandas as pd
 import pint
 
 parser = argparse.ArgumentParser(description="Write wet thickness data.")
 parser.add_argument("pv", type=pathlib.Path, help="Process variable csv file")
 parser.add_argument("metadata", type=pathlib.Path, help="datapackage.json file")
-parser.add_argument("-o", "--out", type=pathlib.Path, help="Output npy file")
+parser.add_argument("-o", "--out", type=pathlib.Path, help="Output csv file")
 args = parser.parse_args()
 
 
@@ -47,6 +46,6 @@ def read_pv(pv_csv_path, datapackage_json_path):
 
 df = read_pv(args.pv, args.metadata)
 wt = df["flow_rate_per_width"] / df["coating_speed"]
-wt = wt.apply(lambda x: x.to("mm").magnitude)
+wt = wt.apply(lambda x: x.to("mm").magnitude).rename("wet_thickness [mm]")
 
-np.save(args.out, wt)
+wt.to_csv(args.out, index=False)
