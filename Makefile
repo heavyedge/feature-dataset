@@ -67,7 +67,7 @@ $(foreach \
 
 # e.g., _temp/v1/wet_thickness/mean_profiles/dataset1.csv
 define WET_THICKNESS_v1
-_temp/v1/wet_thickness/$(1)/$(2).csv: scripts/v1/wet-thickness.py _data/v1/process_variables/$(2).csv _data/v1/datapackage.json
+_temp/v1/wet_thickness/$(1)/$(2).csv: scripts/v1/wet-thickness.py _data/v1/$(1)/$(2) _data/v1/process_variables/$(2).csv _data/v1/datapackage.json
 	mkdir -p $$(@D)
 	python3 $$^ -o $$@
 endef
