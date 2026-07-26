@@ -65,14 +65,25 @@ $(foreach \
 	) \
 )
 
-# e.g., _temp/v1/wet-thickness/dataset1.csv
-_temp/v1/wet-thickness/%.csv: scripts/v1/wet-thickness.py _data/v1/process_variables/%.csv _data/v1/datapackage.json
-	mkdir -p $(@D)
-	python3 $^ -o $@
+# e.g., _temp/v1/wet_thickness/mean_profiles/dataset1.csv
+define WET_THICKNESS_v1
+_temp/v1/wet_thickness/$(1)/$(2).csv: scripts/v1/wet-thickness.py _data/v1/$(1)/$(2) _data/v1/process_variables/$(2).csv _data/v1/datapackage.json
+	mkdir -p $$(@D)
+	python3 $$^ -o $$@
+endef
+$(foreach \
+	target, \
+	profiles mean_profiles, \
+	$(foreach \
+		dataset, \
+		$(call DATASETS_v1,$(target)), \
+		$(eval $(call WET_THICKNESS_v1,$(target),$(dataset))) \
+	) \
+)
 
 # e.g., _temp/v1/shape_features/mean_profiles/dataset1.minirocket.sigmoid.csv
 define SHAPE_FEATURES_v1
-_temp/v1/shape_features/$(1)/$(2).minirocket.$(3).csv: _temp/v1/$(1)/$(2).h5 _temp/v1/wet-thickness/$(2).csv _temp/v1/class_proba/$(1)/$(2).minirocket.$(3).csv config/v1/shape-features.yml 
+_temp/v1/shape_features/$(1)/$(2).minirocket.$(3).csv: _temp/v1/$(1)/$(2).h5 _temp/v1/wet_thickness/$(1)/$(2).csv _temp/v1/class_proba/$(1)/$(2).minirocket.$(3).csv config/v1/shape-features.yml 
 	mkdir -p $$(@D)
 	heavyedge --log-level=INFO shape-features $$(wordlist 1,3,$$^) --config $$(lastword $$^) --n-jobs=$(FEATURE_JOBS) -o $$@
 endef
