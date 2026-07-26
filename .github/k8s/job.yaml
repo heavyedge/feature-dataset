@@ -143,6 +143,10 @@ spec:
               value: "${DEPLOY_CHECK_RUN_ID}"
             - name: DOC_DEPLOY_CHECK_RUN_ID
               value: "${DOC_DEPLOY_CHECK_RUN_ID}"
+            - name: MAKE_JOBS
+              value: "${MAKE_JOBS}"
+            - name: FEATURE_JOBS
+              value: "${FEATURE_JOBS}"
             - name: CLEANUP_CHECK_RUN_ID
               value: "${CLEANUP_CHECK_RUN_ID}"
             - name: IMAGE_TAG
