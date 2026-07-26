@@ -12,7 +12,7 @@ fi
 make_targets="dataset-v1"
 case "${BUILD_MODE:-test}" in
   build)
-    if ! HEAVYEDGE_TEST_MODE=0 make -j ${CPU_REQUEST} ${make_targets}; then
+    if ! HEAVYEDGE_TEST_MODE=0 make -j ${MAKE_JOBS} ${make_targets}; then
       exit 2
     fi
     ;;
@@ -31,7 +31,7 @@ case "${BUILD_MODE:-test}" in
     rm -rf datasets/.cache/huggingface
     ;;
   test)
-    if ! HEAVYEDGE_TEST_MODE=1 make -j ${CPU_REQUEST} ${make_targets}; then
+    if ! HEAVYEDGE_TEST_MODE=1 make -j ${MAKE_JOBS} ${make_targets}; then
       exit 2
     fi
     ;;

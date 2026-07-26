@@ -344,6 +344,8 @@ jobs:
           DEPLOY_MODE: ${{ needs.resolve-variables.outputs.deploy_mode }}
           DOC_BUILD_MODE: ${{ needs.resolve-variables.outputs.doc_build_mode }}
           DOC_DEPLOY_MODE: ${{ needs.resolve-variables.outputs.doc_deploy_mode }}
+          MAKE_JOBS: ${{ vars.MAKE_JOBS }}
+          FEATURE_JOBS: ${{ vars.FEATURE_JOBS }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
           UPSTREAM_REVISION: ${{ needs.resolve-variables.outputs.upstream_revision }}
           UPSTREAM_REPO_ID: ${{ needs.resolve-variables.outputs.upstream_repo_id }}

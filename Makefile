@@ -8,6 +8,7 @@
 DATASETS_v1 = $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),dataset1,$(shell ls -d _data/v1/$(1)/dataset* | xargs -n 1 basename))
 CALIBRATION_METHODS_v1 := sigmoid isotonic sigmoid_ovo isotonic_ovo temperature
 HEAVYEDGE_BATCH_SIZE ?= 100
+FEATURE_JOBS ?= 1
 
 all: datasets
 
@@ -73,7 +74,7 @@ _temp/v1/wet-thickness/%.csv: scripts/v1/wet-thickness.py _data/v1/process_varia
 define SHAPE_FEATURES_v1
 _temp/v1/shape_features/$(1)/$(2).minirocket.$(3).csv: _temp/v1/$(1)/$(2).h5 _temp/v1/wet-thickness/$(2).csv _temp/v1/class_proba/$(1)/$(2).minirocket.$(3).csv config/v1/shape-features.yml 
 	mkdir -p $$(@D)
-	heavyedge --log-level=INFO shape-features $$(wordlist 1,3,$$^) --config $$(lastword $$^) -o $$@
+	heavyedge --log-level=INFO shape-features $$(wordlist 1,3,$$^) --config $$(lastword $$^) --n-jobs=$(FEATURE_JOBS) -o $$@
 endef
 $(foreach \
 	target, \
