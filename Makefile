@@ -121,6 +121,14 @@ benchmarks/v1/mean_profiles/shape_features.%.csv: $(foreach dataset,$(call DATAS
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd; dfs = [pd.read_csv(path) for path in '$^'.split()]; pd.concat(dfs).to_csv('$@', index=False)"
 
+benchmarks/v1/shape_loss/%.csv: scripts/v1/shape-loss.py benchmarks/v1/mean_profiles/shape_features.%.csv
+	mkdir -p $(@D)
+	python3 $^ --lambda_H=0.05 --lambda_b=0.01 --lambda_phi=1 -o $@
+
+benchmarks/v1/local_shape_loss/%.csv: scripts/v1/shape-loss.py benchmarks/v1/mean_profiles/shape_features.%.csv
+	mkdir -p $(@D)
+	python3 $^ --lambda_H=0.05 --lambda_b=0.01 --lambda_phi=0 -o $@
+
 benchmarks/v1/index.npy: scripts/v1/filter-dataset.py benchmarks/v1/dimless.csv
 	python3 $^ -o $@
 
