@@ -121,11 +121,11 @@ benchmarks/v1/mean_profiles/shape_features.%.csv: $(foreach dataset,$(call DATAS
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd; dfs = [pd.read_csv(path) for path in '$^'.split()]; pd.concat(dfs).to_csv('$@', index=False)"
 
-benchmarks/v1/index.csv: scripts/v1/filter-dataset.py benchmarks/v1/dimless.csv
+benchmarks/v1/index.npy: scripts/v1/filter-dataset.py benchmarks/v1/dimless.csv
 	python3 $^ -o $@
 
-examples/v1/shape_features.ipynb: benchmarks/v1/dimless.csv benchmarks/v1/mean_profiles/shape_features.minirocket.sigmoid.csv benchmarks/v1/index.csv .FORCE
+examples/v1/shape_features.ipynb: benchmarks/v1/dimless.csv benchmarks/v1/mean_profiles/shape_features.minirocket.sigmoid.csv benchmarks/v1/index.npy .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@
 
-examples/v1/classifier.ipynb: benchmarks/v1/dimless.csv benchmarks/v1/index.csv $(foreach method,$(CALIBRATION_METHODS_v1),benchmarks/v1/mean_profiles/shape_features.minirocket.$(method).csv) .FORCE
+examples/v1/classifier.ipynb: benchmarks/v1/dimless.csv benchmarks/v1/index.npy $(foreach method,$(CALIBRATION_METHODS_v1),benchmarks/v1/mean_profiles/shape_features.minirocket.$(method).csv) .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@

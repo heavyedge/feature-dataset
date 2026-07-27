@@ -7,7 +7,7 @@ import pandas as pd
 
 parser = argparse.ArgumentParser()
 parser.add_argument("X", type=pathlib.Path, help="Dimensionless variables csv file.")
-parser.add_argument("-o", "--out", type=pathlib.Path, help="Output index csv file.")
+parser.add_argument("-o", "--out", type=pathlib.Path, help="Output index npy file.")
 args = parser.parse_args()
 
 df = pd.read_csv(args.X).drop(columns=["name"])
@@ -43,4 +43,4 @@ for i, (_, df) in enumerate(groups):
         indices.extend(df.index.tolist())
 idxs = np.sort(indices)
 
-np.savetxt(args.out, idxs, delimiter=",", fmt="%d", header="index", comments="")
+np.save(args.out, idxs)
