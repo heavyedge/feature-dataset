@@ -26,7 +26,11 @@ $(foreach \
 )
 
 clean:
-	rm -rf _temp datasets/v*
+	rm -rf _temp benchmarks
+	for dataset_dir in datasets/v*; do
+		[ -d "$$dataset_dir" ] || continue
+		find "$$dataset_dir" -mindepth 1 -maxdepth 1 ! -name datapackage.json -exec rm -rf -- {} +
+	done
 
 
 # e.g., _temp/v1/mean_profiles/dataset1.h5
@@ -104,3 +108,17 @@ $(foreach \
 datasets/v1/shape_features/%.csv: _temp/v1/shape_features/%.minirocket.sigmoid.csv
 	mkdir -p $(@D)
 	cp $< $@
+
+benchmarks/v1/dimless.csv: scripts/v1/write-dimless.py _data/v1/process_variables/dataset1.csv _data/v1/process_variables/dataset2.csv _data/v1/process_variables/dataset3.csv _data/v1/process_variables/dataset4.csv _data/v1/process_variables/dataset5.csv _data/v1/datapackage.json
+	mkdir -p $(@D)
+	python3 $^ -o $@
+
+benchmarks/v1/mean_profiles/shape_features.csv: datasets/v1/shape_features/mean_profiles/dataset1.csv datasets/v1/shape_features/mean_profiles/dataset2.csv datasets/v1/shape_features/mean_profiles/dataset3.csv datasets/v1/shape_features/mean_profiles/dataset4.csv datasets/v1/shape_features/mean_profiles/dataset5.csv
+	mkdir -p $(@D)
+	python3 -c "import pandas as pd; dfs = [pd.read_csv(path) for path in '$^'.split()]; pd.concat(dfs).to_csv('$@', index=False)"
+
+benchmarks/v1/index.csv: scripts/v1/filter-dataset.py benchmarks/v1/dimless.csv
+	python3 $^ -o $@
+
+examples/v1/shape_features.ipynb: benchmarks/v1/dimless.csv benchmarks/v1/mean_profiles/shape_features.csv benchmarks/v1/index.csv
+	jupyter nbconvert --to notebook --execute --inplace $@
