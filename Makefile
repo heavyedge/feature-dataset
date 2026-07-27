@@ -10,9 +10,11 @@ CALIBRATION_METHODS_v1 := sigmoid isotonic sigmoid_ovo isotonic_ovo temperature
 HEAVYEDGE_BATCH_SIZE ?= 100
 FEATURE_JOBS ?= 1
 
-all: datasets
+all: datasets examples
 
 datasets: dataset-v1
+
+examples: examples-v1
 
 dataset-v1: \
 $(foreach \
@@ -24,6 +26,8 @@ $(foreach \
 		datasets/v1/shape_features/$(target)/$(dataset).csv \
 	) \
 )
+
+examples-v1: $(wildcard examples/v1/*.ipynb)
 
 clean:
 	rm -rf _temp benchmarks
