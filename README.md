@@ -23,13 +23,68 @@ cd feature-dataset
 pip install -r requirements.txt
 ```
 
-### Downloading the profile dataset (Optional)
+### Downloading the prerequisites (Optional)
 
-Run the following commands to download the profile dataset in the `_data` directory.
+Run the following commands to download the prerequisites in the `_data` directory.
 
 ```sh
 export HUGGINGFACE_TOKEN="..."
 ./setup.sh
+```
+
+### Acquiring the shape feature data
+
+The shape feature data built by this project can be acquired by downloading it directly from the [dataset repository](https://huggingface.co/datasets/jeesoo9595/heavyedge-features).
+Alternatively, you can perform the feature extraction yourself if you have downloaded the prerequisites.
+
+Either approach creates the feature data in the `datasets` directory.
+
+#### Direct download
+
+You need:
+
+- [Hugging Face CLI](https://huggingface.co/docs/transformers/en/installation)
+
+Run the following command:
+
+```sh
+hf download jeesoo9595/heavyedge-features --repo-type dataset --local-dir datasets
+```
+
+#### Building the dataset
+
+You need:
+
+- `make`
+
+Run the following command:
+
+```sh
+make datasets
+```
+
+Each `datasets/v*` directory stores shape feature data from the corresponding major version of profile dataset.
+
+Feature extraction can be done in parallel by setting the `FEATURE_JOBS` argument.
+
+### Acquiring the built examples
+
+The shape feature data are visualized as notebooks in the `examples` directory.
+
+The notebook outputs are stripped before being stored in this repository.
+To check their outputs, you must acquire the built example notebooks.
+
+You can either download the built notebooks from the [GitHub release](https://github.com/heavyedge/feature-dataset/releases) artifacts, or build the notebooks yourself if you have acquired the feature data.
+
+#### Building the notebooks
+
+You need:
+
+- `make`
+
+```sh
+pip install -r examples/requirements.txt
+make examples
 ```
 
 ## Contributing
@@ -47,13 +102,29 @@ git config filter.nbstripout.required true
 
 ### Testing
 
-Setting the `HEAVYEDGE_TEST_MODE` environment variable to `1` downloades and preprocesses only a small subset of data for testing purposes.
+Setting the `HEAVYEDGE_TEST_MODE` environment variable to `1` downloades and buildxs only a small subset of data for testing purposes.
 
 ```sh
 export HEAVYEDGE_TEST_MODE=1
 ./setup.sh
 make
 ```
+
+### Building the container image
+
+The `Dockerfile` is provided to facilitate data distribution without sharing secrets.
+
+After downloading the prerequisites and building the dataset and examples, build the image with one of the following targets:
+
+- `base` (default)
+  - Includes the dataset (`datasets`).
+  - Includes the built examples (`examples`).
+  - Includes non-hidden source files.
+- `dev`
+  - Includes the prerequisites (`_data`, `_model`).
+  - Includes the dataset (`datasets`).
+  - Includes the built examples (`examples`).
+  - Includes all source files.
 
 ### Versioning policy
 

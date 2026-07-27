@@ -26,7 +26,11 @@ $(foreach \
 )
 
 clean:
-	rm -rf _temp datasets/v*
+	rm -rf _temp
+	for dataset_dir in datasets/v*; do
+		[ -d "$$dataset_dir" ] || continue
+		find "$$dataset_dir" -mindepth 1 -maxdepth 1 ! -name datapackage.json -exec rm -rf -- {} +
+	done
 
 
 # e.g., _temp/v1/mean_profiles/dataset1.h5
@@ -104,3 +108,6 @@ $(foreach \
 datasets/v1/shape_features/%.csv: _temp/v1/shape_features/%.minirocket.sigmoid.csv
 	mkdir -p $(@D)
 	cp $< $@
+
+examples/v1/shape_features.ipynb: datasets/v1/shape_features/mean_profiles/dataset1.csv datasets/v1/shape_features/mean_profiles/dataset2.csv datasets/v1/shape_features/mean_profiles/dataset3.csv datasets/v1/shape_features/mean_profiles/dataset4.csv datasets/v1/shape_features/mean_profiles/dataset5.csv .FORCE
+	jupyter nbconvert --to notebook --execute --inplace $@
