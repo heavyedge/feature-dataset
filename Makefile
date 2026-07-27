@@ -124,8 +124,8 @@ benchmarks/v1/mean_profiles/shape_features.%.csv: $(foreach dataset,$(call DATAS
 benchmarks/v1/index.csv: scripts/v1/filter-dataset.py benchmarks/v1/dimless.csv
 	python3 $^ -o $@
 
-examples/v1/shape_features.ipynb: benchmarks/v1/dimless.csv benchmarks/v1/mean_profiles/shape_features.minirocket.sigmoid.csv benchmarks/v1/index.csv
+examples/v1/shape_features.ipynb: benchmarks/v1/dimless.csv benchmarks/v1/mean_profiles/shape_features.minirocket.sigmoid.csv benchmarks/v1/index.csv .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@
 
-examples/v1/classifier.ipynb: $(foreach method,$(CALIBRATION_METHODS_v1),benchmarks/v1/mean_profiles/shape_features.minirocket.$(method).csv)
+examples/v1/classifier.ipynb: benchmarks/v1/dimless.csv benchmarks/v1/index.csv $(foreach method,$(CALIBRATION_METHODS_v1),benchmarks/v1/mean_profiles/shape_features.minirocket.$(method).csv) .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@
