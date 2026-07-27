@@ -4,6 +4,11 @@
 
 Edge profile shape feature dataset.
 
+Provides:
+  - Shape feature dataset.
+  - Benchmark results of shape features.
+  - Example notebooks.
+
 ## Usage
 
 This repository provides scripts to perform feature extraction from each version of profile dataset.
@@ -69,7 +74,7 @@ Feature extraction can be done in parallel by setting the `FEATURE_JOBS` argumen
 
 ### Acquiring the built examples
 
-The shape feature data are visualized as notebooks in the `examples` directory.
+The shape feature data and benchmark results are visualized as notebooks in the `examples` directory.
 
 The notebook outputs are stripped before being stored in this repository.
 To check their outputs, you must acquire the built example notebooks.
@@ -118,12 +123,12 @@ After downloading the prerequisites and building the dataset and examples, build
 
 - `base` (default)
   - Includes the dataset (`datasets`).
-  - Includes the built examples (`examples`).
+  - Includes the benchmarks and built examples (`benchmarks`, `examples`).
   - Includes non-hidden source files.
 - `dev`
   - Includes the prerequisites (`_data`, `_model`).
   - Includes the dataset (`datasets`).
-  - Includes the built examples (`examples`).
+  - Includes the benchmarks and built examples (`benchmarks`, `examples`).
   - Includes all source files.
 
 ### Versioning policy
