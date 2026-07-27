@@ -10,9 +10,11 @@ CALIBRATION_METHODS_v1 := sigmoid isotonic sigmoid_ovo isotonic_ovo temperature
 HEAVYEDGE_BATCH_SIZE ?= 100
 FEATURE_JOBS ?= 1
 
-all: datasets
+all: datasets examples
 
 datasets: dataset-v1
+
+examples: examples-v1
 
 dataset-v1: \
 $(foreach \
@@ -24,6 +26,8 @@ $(foreach \
 		datasets/v1/shape_features/$(target)/$(dataset).csv \
 	) \
 )
+
+examples-v1: $(wildcard examples/v1/*.ipynb)
 
 clean:
 	rm -rf _temp benchmarks
@@ -109,11 +113,11 @@ datasets/v1/shape_features/%.csv: _temp/v1/shape_features/%.minirocket.sigmoid.c
 	mkdir -p $(@D)
 	cp $< $@
 
-benchmarks/v1/dimless.csv: scripts/v1/write-dimless.py _data/v1/process_variables/dataset1.csv _data/v1/process_variables/dataset2.csv _data/v1/process_variables/dataset3.csv _data/v1/process_variables/dataset4.csv _data/v1/process_variables/dataset5.csv _data/v1/datapackage.json
+benchmarks/v1/dimless.csv: scripts/v1/write-dimless.py $(shell ls _data/v1/process_variables/dataset*.csv) _data/v1/datapackage.json
 	mkdir -p $(@D)
 	python3 $^ -o $@
 
-benchmarks/v1/mean_profiles/shape_features.csv: datasets/v1/shape_features/mean_profiles/dataset1.csv datasets/v1/shape_features/mean_profiles/dataset2.csv datasets/v1/shape_features/mean_profiles/dataset3.csv datasets/v1/shape_features/mean_profiles/dataset4.csv datasets/v1/shape_features/mean_profiles/dataset5.csv
+benchmarks/v1/mean_profiles/shape_features.csv: $(foreach dataset,$(call DATASETS_v1,mean_profiles),datasets/v1/shape_features/mean_profiles/$(dataset).csv)
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd; dfs = [pd.read_csv(path) for path in '$^'.split()]; pd.concat(dfs).to_csv('$@', index=False)"
 

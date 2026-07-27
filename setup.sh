@@ -2,7 +2,7 @@
 
 pip install uv
 
-uv pip install --system -r requirements.txt
+uv pip install --system -r requirements.txt -r examples/requirements.txt
 
 mkdir -p ./_data/v1/ ./_models
 curl -LsSf https://hf.co/cli/install.sh | bash
