@@ -117,7 +117,7 @@ benchmarks/v1/dimless.csv: scripts/v1/write-dimless.py $(shell ls _data/v1/proce
 	mkdir -p $(@D)
 	python3 $^ -o $@
 
-benchmarks/v1/mean_profiles/shape_features.csv: $(shell ls datasets/v1/shape_features/mean_profiles/dataset*.csv)
+benchmarks/v1/mean_profiles/shape_features.csv: $(foreach dataset,$(call DATASETS_v1,mean_profiles),datasets/v1/shape_features/mean_profiles/$(dataset).csv)
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd; dfs = [pd.read_csv(path) for path in '$^'.split()]; pd.concat(dfs).to_csv('$@', index=False)"
 
