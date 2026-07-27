@@ -109,8 +109,13 @@ datasets/v1/shape_features/%.csv: _temp/v1/shape_features/%.minirocket.sigmoid.c
 	mkdir -p $(@D)
 	cp $< $@
 
+benchmarks/v1/dimless.csv: scripts/v1/write-dimless.py _data/v1/process_variables/dataset1.csv _data/v1/process_variables/dataset2.csv _data/v1/process_variables/dataset3.csv _data/v1/process_variables/dataset4.csv _data/v1/process_variables/dataset5.csv _data/v1/datapackage.json
+	mkdir -p $(@D)
+	python3 $^ -o $@
+
 benchmarks/v1/mean_profiles/shape_features.csv: datasets/v1/shape_features/mean_profiles/dataset1.csv datasets/v1/shape_features/mean_profiles/dataset2.csv datasets/v1/shape_features/mean_profiles/dataset3.csv datasets/v1/shape_features/mean_profiles/dataset4.csv datasets/v1/shape_features/mean_profiles/dataset5.csv
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd; dfs = [pd.read_csv(path) for path in '$^'.split()]; pd.concat(dfs).to_csv('$@', index=False)"
 
-examples/v1/shape_features.ipynb: benchmarks/v1/mean_profiles/shape_features.csv
+examples/v1/shape_features.ipynb: benchmarks/v1/dimless.csv benchmarks/v1/mean_profiles/shape_features.csv
+	jupyter nbconvert --to notebook --execute --inplace $@
