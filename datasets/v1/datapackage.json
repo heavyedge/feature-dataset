@@ -1,0 +1,76 @@
+{
+  "name": "heavyedge-feature-dataset",
+  "title": "HeavyEdge Shape Feature Dataset",
+  "description": "Dataset of shape features of edge profiles",
+  "version": "1",
+  "licenses": [
+    {
+      "name": "CC-BY-4.0"
+    }
+  ],
+
+  "resources": [
+    {
+    "name": "Profile shape features",
+    "path": "shape_features/profiles/",
+    "title": "Shape features from slot-die coating edge profiles",
+    "description": "Shape features of all profiles. Extracted from 'v1/profiles/' of profile dataset.",
+    "format": "csv",
+    "mediatype": "text/csv",
+    "type": "table",
+    "schema": {
+        "fields": [
+          {
+            "name": "H",
+            "type": "number",
+            "unit": "none",
+            "description": "Dimensionless edge height"
+          },
+          {
+            "name": "b",
+            "type": "number",
+            "unit": "mm",
+            "description": "Edge width in millimeters"
+          },
+          {
+            "name": "phi",
+            "type": "number",
+            "unit": "none",
+            "description": "Global edge shape score"
+          }
+        ]
+      }
+    },
+    {
+    "name": "Mean profile shape features",
+    "path": "shape_features/mean_profiles/",
+    "title": "Shape features from mean slot-die coating edge profiles",
+    "description": "Shape features of mean profiles. Extracted from 'v1/mean_profiles/' of profile dataset.",
+    "format": "csv",
+    "mediatype": "text/csv",
+    "type": "table",
+    "schema": {
+        "fields": [
+          {
+            "name": "H",
+            "type": "number",
+            "unit": "none",
+            "description": "Dimensionless edge height"
+          },
+          {
+            "name": "b",
+            "type": "number",
+            "unit": "mm",
+            "description": "Edge width in millimeters"
+          },
+          {
+            "name": "phi",
+            "type": "number",
+            "unit": "none",
+            "description": "Global edge shape score"
+          }
+        ]
+      }
+    }
+  ]
+}
