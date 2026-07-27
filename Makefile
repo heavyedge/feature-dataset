@@ -132,8 +132,11 @@ benchmarks/v1/local_shape_loss/%.csv: scripts/v1/shape-loss.py benchmarks/v1/mea
 benchmarks/v1/index.npy: scripts/v1/filter-dataset.py benchmarks/v1/dimless.csv
 	python3 $^ -o $@
 
+examples/v1/classifier.ipynb: benchmarks/v1/dimless.csv benchmarks/v1/index.npy $(foreach method,$(CALIBRATION_METHODS_v1),benchmarks/v1/mean_profiles/shape_features.minirocket.$(method).csv) .FORCE
+	jupyter nbconvert --to notebook --execute --inplace $@
+
 examples/v1/shape_features.ipynb: benchmarks/v1/dimless.csv benchmarks/v1/mean_profiles/shape_features.minirocket.sigmoid.csv benchmarks/v1/index.npy .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@
 
-examples/v1/classifier.ipynb: benchmarks/v1/dimless.csv benchmarks/v1/index.npy $(foreach method,$(CALIBRATION_METHODS_v1),benchmarks/v1/mean_profiles/shape_features.minirocket.$(method).csv) .FORCE
+examples/v1/shape_loss.ipynb: benchmarks/v1/mean_profiles/shape_features.minirocket.sigmoid.csv benchmarks/v1/shape_loss/minirocket.sigmoid.csv benchmarks/v1/local_shape_loss/minirocket.sigmoid.csv .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@
