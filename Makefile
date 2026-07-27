@@ -117,12 +117,15 @@ benchmarks/v1/dimless.csv: scripts/v1/write-dimless.py $(shell ls _data/v1/proce
 	mkdir -p $(@D)
 	python3 $^ -o $@
 
-benchmarks/v1/mean_profiles/shape_features.csv: $(foreach dataset,$(call DATASETS_v1,mean_profiles),datasets/v1/shape_features/mean_profiles/$(dataset).csv)
+benchmarks/v1/mean_profiles/shape_features.%.csv: $(foreach dataset,$(call DATASETS_v1,mean_profiles),_temp/v1/shape_features/mean_profiles/$(dataset).%.csv)
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd; dfs = [pd.read_csv(path) for path in '$^'.split()]; pd.concat(dfs).to_csv('$@', index=False)"
 
 benchmarks/v1/index.csv: scripts/v1/filter-dataset.py benchmarks/v1/dimless.csv
 	python3 $^ -o $@
 
-examples/v1/shape_features.ipynb: benchmarks/v1/dimless.csv benchmarks/v1/mean_profiles/shape_features.csv benchmarks/v1/index.csv
+examples/v1/shape_features.ipynb: benchmarks/v1/dimless.csv benchmarks/v1/mean_profiles/shape_features.minirocket.sigmoid.csv benchmarks/v1/index.csv .FORCE
+	jupyter nbconvert --to notebook --execute --inplace $@
+
+examples/v1/classifier.ipynb: benchmarks/v1/dimless.csv benchmarks/v1/index.csv $(foreach method,$(CALIBRATION_METHODS_v1),benchmarks/v1/mean_profiles/shape_features.minirocket.$(method).csv) .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@
