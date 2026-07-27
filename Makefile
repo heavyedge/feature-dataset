@@ -117,5 +117,8 @@ benchmarks/v1/mean_profiles/shape_features.csv: datasets/v1/shape_features/mean_
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd; dfs = [pd.read_csv(path) for path in '$^'.split()]; pd.concat(dfs).to_csv('$@', index=False)"
 
-examples/v1/shape_features.ipynb: benchmarks/v1/dimless.csv benchmarks/v1/mean_profiles/shape_features.csv
+benchmarks/v1/index.csv: scripts/v1/filter-dataset.py benchmarks/v1/dimless.csv
+	python3 $^ -o $@
+
+examples/v1/shape_features.ipynb: benchmarks/v1/dimless.csv benchmarks/v1/mean_profiles/shape_features.csv benchmarks/v1/index.csv
 	jupyter nbconvert --to notebook --execute --inplace $@

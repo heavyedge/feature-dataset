@@ -51,11 +51,15 @@ def read_pv(pv_csv_path, datapackage_json_path):
 df = pd.concat([read_pv(path, args.metadata) for path in args.pv], ignore_index=True)
 
 wet_thickness = df["flow_rate_per_width"] / df["coating_speed"]
-Rgt = (df["coating_gap"] / wet_thickness).apply(lambda x: x.to_reduced_units())
+H_g = df["coating_gap"]
+Rgt = (H_g / wet_thickness).apply(lambda x: x.to_reduced_units())
 Ca = (df["viscosity"] * df["coating_speed"] / df["surface_tension"]).apply(
     lambda x: x.to_reduced_units()
 )
 cos_theta = df["contact_angle"].apply(lambda x: np.cos(x.to("radian").magnitude))
+H_F = (df["shim_thickness"] / H_g).apply(lambda x: x.to_reduced_units())
+L_d = (df["downstream_lip_length"] / H_g).apply(lambda x: x.to_reduced_units())
+L_u = (df["upstream_lip_length"] / H_g).apply(lambda x: x.to_reduced_units())
 
 
 dimless = pd.DataFrame(
@@ -65,6 +69,9 @@ dimless = pd.DataFrame(
         "gap_to_thickness_ratio": Rgt.apply(lambda x: x.magnitude),
         "capillary_number": Ca.apply(lambda x: x.magnitude),
         "cosine_of_contact_angle": cos_theta,
+        "feed_slot_height_ratio": H_F.apply(lambda x: x.magnitude),
+        "downstream_lip_length_ratio": L_d.apply(lambda x: x.magnitude),
+        "upstream_lip_length_ratio": L_u.apply(lambda x: x.magnitude),
     }
 )
 dimless.to_csv(args.out, index=False)
