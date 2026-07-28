@@ -150,30 +150,6 @@ examples/v1/shape_features/%.csv: _temp/v1/shape_features/%.csv _temp/v1/example
 examples/v1/phi-profiles.h5: _temp/v1/mean_profiles.h5 _temp/v1/phi-index.npy
 	heavyedge filter $^ -o $@
 
-benchmarks/v1/shape_loss/%.csv: scripts/v1/shape-loss.py examples/v1/shape_features/%.csv
-	mkdir -p $(@D)
-	python3 $^ --lambda_H=0.05 --lambda_b=0.01 --lambda_phi=1 -o $@
-
-benchmarks/v1/shape_loss/%.5p_idx.npy: benchmarks/v1/shape_loss/%.csv
-	mkdir -p $(@D)
-	python3 -c "import numpy as np, pandas as pd; losses = pd.read_csv('$<')['shape_loss'].to_numpy(); threshold = np.percentile(losses, 5); np.save('$@', np.where(losses <= threshold)[0])"
-
-benchmarks/v1/shape_loss/%.5p_profiles.h5: _temp/v1/mean_profiles.h5 benchmarks/v1/shape_loss/%.5p_idx.npy
-	heavyedge filter $^ -o $@
-
-benchmarks/v1/local_shape_loss/%.csv: scripts/v1/shape-loss.py examples/v1/shape_features/%.csv
-	mkdir -p $(@D)
-	python3 $^ --lambda_H=0.05 --lambda_b=0.01 --lambda_phi=0 -o $@
-
-benchmarks/v1/local_shape_loss/%.5p_idx.npy: benchmarks/v1/local_shape_loss/%.csv
-	mkdir -p $(@D)
-	python3 -c "import numpy as np, pandas as pd; losses = pd.read_csv('$<')['shape_loss'].to_numpy(); threshold = np.percentile(losses, 5); np.save('$@', np.where(losses <= threshold)[0])"
-
-benchmarks/v1/local_shape_loss/%.5p_profiles.h5: _temp/v1/mean_profiles.h5 benchmarks/v1/local_shape_loss/%.5p_idx.npy
-	heavyedge filter $^ -o $@
-
-# Examples
-
 examples/v1/classifier.ipynb: examples/v1/dimless.csv $(foreach method,$(CALIBRATION_METHODS_v1),examples/v1/shape_features/minirocket.$(method).csv) .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@
 
@@ -181,7 +157,4 @@ examples/v1/phi.ipynb: .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@
 
 examples/v1/shape_features.ipynb: examples/v1/dimless.csv examples/v1/shape_features/minirocket.sigmoid.csv .FORCE
-	jupyter nbconvert --to notebook --execute --inplace $@
-
-examples/v1/shape_loss.ipynb: examples/v1/shape_features/minirocket.sigmoid.csv benchmarks/v1/shape_loss/minirocket.sigmoid.5p_idx.npy benchmarks/v1/local_shape_loss/minirocket.sigmoid.5p_idx.npy benchmarks/v1/local_shape_loss/minirocket.sigmoid.5p_profiles.h5 benchmarks/v1/shape_loss/minirocket.sigmoid.5p_profiles.h5 .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@
