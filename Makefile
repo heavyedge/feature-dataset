@@ -6,7 +6,7 @@
 .FORCE:
 
 DATASETS_v1 = $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),dataset1,$(shell ls -d _data/v1/$(1)/dataset* | xargs -n 1 basename))
-CALIBRATION_METHODS_v1 := sigmoid isotonic sigmoid_ovo isotonic_ovo temperature
+CALIBRATION_METHODS_v1 := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),sigmoid,sigmoid isotonic sigmoid_ovo isotonic_ovo temperature)
 HEAVYEDGE_BATCH_SIZE ?= 100
 FEATURE_JOBS ?= 1
 
