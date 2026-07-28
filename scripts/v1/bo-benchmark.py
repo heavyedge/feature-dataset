@@ -35,7 +35,7 @@ parser.add_argument(
     default=1,
     help="Number of jobs to run in parallel.",
 )
-parser.add_argument("-o", "--out", type=pathlib.Path, help="Output npy file.")
+parser.add_argument("-o", "--out", type=pathlib.Path, help="Output csv file.")
 args = parser.parse_args()
 
 # Setup logging
@@ -171,7 +171,8 @@ try:
             completed += 1
 
             logger.info(f"{args.out}: {completed}/{N_SIM}")
-    np.save(args.out, np.array(results))
+    df = pd.DataFrame(np.array(results).T, columns=[f"sim_{i}" for i in range(N_SIM)])
+    df.to_csv(args.out, index=False)
 
 except KeyboardInterrupt:
     for future in futures:
