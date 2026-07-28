@@ -6,6 +6,7 @@
 .FORCE:
 
 DATASETS_v1 = $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),dataset1,$(shell ls -d _data/v1/$(1)/dataset* | xargs -n 1 basename))
+PROCESS_VARIABLES_v1 := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),dataset1,$(shell ls _data/v1/process_variables/dataset*.csv | xargs -n 1 basename -s .csv))
 CALIBRATION_METHODS_v1 := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),sigmoid,sigmoid isotonic sigmoid_ovo isotonic_ovo temperature)
 HEAVYEDGE_BATCH_SIZE ?= 100
 FEATURE_JOBS ?= 1
@@ -129,7 +130,7 @@ _temp/v1/mean_profiles.h5: $(foreach dataset,$(call DATASETS_v1,mean_profiles),_
 _temp/v1/phi-index.npy: scripts/v1/phi-index.py _temp/v1/shape_features/minirocket.sigmoid.csv _temp/v1/class_proba/mean_profiles.csv
 	python3 $^ -o $@
 
-_temp/v1/dimless.csv: scripts/v1/write-dimless.py $(shell ls _data/v1/process_variables/dataset*.csv) _data/v1/datapackage.json
+_temp/v1/dimless.csv: scripts/v1/write-dimless.py $(foreach dataset,$(PROCESS_VARIABLES_v1),_data/v1/process_variables/$(dataset).csv) _data/v1/datapackage.json
 	mkdir -p $(@D)
 	python3 $^ -o $@
 
