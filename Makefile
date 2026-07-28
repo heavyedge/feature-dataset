@@ -35,6 +35,10 @@ clean:
 		[ -d "$$dataset_dir" ] || continue
 		find "$$dataset_dir" -mindepth 1 -maxdepth 1 ! -name datapackage.json -exec rm -rf -- {} +
 	done
+	for example_dir in examples/v*; do
+		[ -d "$$example_dir" ] || continue
+		find "$$example_dir" -mindepth 1 -maxdepth 1 ! -name '*.ipynb' -exec rm -rf -- {} +
+	done
 
 
 # e.g., _temp/v1/mean_profiles/dataset1.h5
@@ -117,35 +121,29 @@ datasets/v1/shape_features/%.csv: _temp/v1/shape_features/%.minirocket.sigmoid.c
 	mkdir -p $(@D)
 	cp $< $@
 
-# Benchmarks and examples
+# Benchmarks
 
 _temp/v1/mean_profiles.h5: $(foreach dataset,$(call DATASETS_v1,mean_profiles),_temp/v1/mean_profiles/$(dataset).h5)
 	heavyedge merge $^ -o $@
 
-benchmarks/v1/dimless.csv: scripts/v1/write-dimless.py $(shell ls _data/v1/process_variables/dataset*.csv) _data/v1/datapackage.json
+examples/v1/dimless.csv: scripts/v1/write-dimless.py $(shell ls _data/v1/process_variables/dataset*.csv) _data/v1/datapackage.json
 	mkdir -p $(@D)
 	python3 $^ -o $@
 
-benchmarks/v1/shape_features/%.csv: $(foreach dataset,$(call DATASETS_v1,mean_profiles),_temp/v1/shape_features/mean_profiles/$(dataset).%.csv)
+examples/v1/shape_features/%.csv: $(foreach dataset,$(call DATASETS_v1,mean_profiles),_temp/v1/shape_features/mean_profiles/$(dataset).%.csv)
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd; dfs = [pd.read_csv(path) for path in '$^'.split()]; pd.concat(dfs).to_csv('$@', index=False)"
 
-benchmarks/v1/index.npy: scripts/v1/filter-dataset.py benchmarks/v1/dimless.csv
+examples/v1/index.npy: scripts/v1/filter-dataset.py examples/v1/dimless.csv
 	python3 $^ -o $@
 
-examples/v1/classifier.ipynb: benchmarks/v1/dimless.csv benchmarks/v1/index.npy $(foreach method,$(CALIBRATION_METHODS_v1),benchmarks/v1/shape_features/minirocket.$(method).csv) .FORCE
-	jupyter nbconvert --to notebook --execute --inplace $@
-
-benchmarks/v1/phi-index.npy: scripts/v1/phi-index.py benchmarks/v1/shape_features/minirocket.sigmoid.csv _temp/v1/class_proba/mean_profiles.csv
+examples/v1/phi-index.npy: scripts/v1/phi-index.py examples/v1/shape_features/minirocket.sigmoid.csv _temp/v1/class_proba/mean_profiles.csv
 	python3 $^ -o $@
 
-benchmarks/v1/phi-profiles.h5: _temp/v1/mean_profiles.h5 benchmarks/v1/phi-index.npy
+examples/v1/phi-profiles.h5: _temp/v1/mean_profiles.h5 examples/v1/phi-index.npy
 	heavyedge filter $^ -o $@
 
-examples/v1/shape_features.ipynb: benchmarks/v1/phi-index.npy benchmarks/v1/phi-profiles.h5 benchmarks/v1/shape_features/minirocket.sigmoid.csv benchmarks/v1/dimless.csv benchmarks/v1/index.npy .FORCE
-	jupyter nbconvert --to notebook --execute --inplace $@
-
-benchmarks/v1/shape_loss/%.csv: scripts/v1/shape-loss.py benchmarks/v1/shape_features/%.csv
+benchmarks/v1/shape_loss/%.csv: scripts/v1/shape-loss.py examples/v1/shape_features/%.csv
 	mkdir -p $(@D)
 	python3 $^ --lambda_H=0.05 --lambda_b=0.01 --lambda_phi=1 -o $@
 
@@ -153,7 +151,10 @@ benchmarks/v1/shape_loss/%.5p_idx.npy: benchmarks/v1/shape_loss/%.csv
 	mkdir -p $(@D)
 	python3 -c "import numpy as np, pandas as pd; losses = pd.read_csv('$<')['shape_loss'].to_numpy(); threshold = np.percentile(losses, 5); np.save('$@', np.where(losses <= threshold)[0])"
 
-benchmarks/v1/local_shape_loss/%.csv: scripts/v1/shape-loss.py benchmarks/v1/shape_features/%.csv
+benchmarks/v1/shape_loss/%.5p_profiles.h5: _temp/v1/mean_profiles.h5 benchmarks/v1/shape_loss/%.5p_idx.npy
+	heavyedge filter $^ -o $@
+
+benchmarks/v1/local_shape_loss/%.csv: scripts/v1/shape-loss.py examples/v1/shape_features/%.csv
 	mkdir -p $(@D)
 	python3 $^ --lambda_H=0.05 --lambda_b=0.01 --lambda_phi=0 -o $@
 
@@ -161,11 +162,16 @@ benchmarks/v1/local_shape_loss/%.5p_idx.npy: benchmarks/v1/local_shape_loss/%.cs
 	mkdir -p $(@D)
 	python3 -c "import numpy as np, pandas as pd; losses = pd.read_csv('$<')['shape_loss'].to_numpy(); threshold = np.percentile(losses, 5); np.save('$@', np.where(losses <= threshold)[0])"
 
-benchmarks/v1/shape_loss/%.5p_profiles.h5: _temp/v1/mean_profiles.h5 benchmarks/v1/shape_loss/%.5p_idx.npy
-	heavyedge filter $^ -o $@
-
 benchmarks/v1/local_shape_loss/%.5p_profiles.h5: _temp/v1/mean_profiles.h5 benchmarks/v1/local_shape_loss/%.5p_idx.npy
 	heavyedge filter $^ -o $@
 
-examples/v1/shape_loss.ipynb: benchmarks/v1/shape_features/minirocket.sigmoid.csv benchmarks/v1/shape_loss/minirocket.sigmoid.5p_idx.npy benchmarks/v1/local_shape_loss/minirocket.sigmoid.5p_idx.npy benchmarks/v1/local_shape_loss/minirocket.sigmoid.5p_profiles.h5 benchmarks/v1/shape_loss/minirocket.sigmoid.5p_profiles.h5 .FORCE
+# Examples
+
+examples/v1/classifier.ipynb: examples/v1/dimless.csv examples/v1/index.npy $(foreach method,$(CALIBRATION_METHODS_v1),examples/v1/shape_features/minirocket.$(method).csv) .FORCE
+	jupyter nbconvert --to notebook --execute --inplace $@
+
+examples/v1/shape_features.ipynb: examples/v1/phi-index.npy examples/v1/phi-profiles.h5 examples/v1/shape_features/minirocket.sigmoid.csv examples/v1/dimless.csv examples/v1/index.npy .FORCE
+	jupyter nbconvert --to notebook --execute --inplace $@
+
+examples/v1/shape_loss.ipynb: examples/v1/shape_features/minirocket.sigmoid.csv benchmarks/v1/shape_loss/minirocket.sigmoid.5p_idx.npy benchmarks/v1/local_shape_loss/minirocket.sigmoid.5p_idx.npy benchmarks/v1/local_shape_loss/minirocket.sigmoid.5p_profiles.h5 benchmarks/v1/shape_loss/minirocket.sigmoid.5p_profiles.h5 .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@
