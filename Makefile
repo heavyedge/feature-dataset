@@ -9,7 +9,7 @@ DATASETS_v1 = $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),dataset1,$(shell ls -d _da
 PROCESS_VARIABLES_v1 := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),dataset1,$(shell ls _data/v1/process_variables/dataset*.csv | xargs -n 1 basename -s .csv))
 CALIBRATION_METHODS_v1 := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),sigmoid,sigmoid isotonic sigmoid_ovo isotonic_ovo temperature)
 HEAVYEDGE_BATCH_SIZE ?= 100
-ACQUISITION_METHODS := EI LCB_kappa_0.1 LCB_kappa_1 LCB_kappa_10 PI
+ACQUISITION_METHODS := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),EI,EI LCB_kappa_0.1 LCB_kappa_1 LCB_kappa_10 PI)
 BO_N_SIM := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),3,1000)
 FEATURE_JOBS ?= 1
 
