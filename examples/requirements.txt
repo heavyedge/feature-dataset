@@ -1,3 +1,4 @@
+paretoset
 matplotlib
 ipykernel
 nbconvert
