@@ -9,6 +9,7 @@ DATASETS_v1 = $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),dataset1,$(shell ls -d _da
 PROCESS_VARIABLES_v1 := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),dataset1,$(shell ls _data/v1/process_variables/dataset*.csv | xargs -n 1 basename -s .csv))
 CALIBRATION_METHODS_v1 := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),sigmoid,sigmoid isotonic sigmoid_ovo isotonic_ovo temperature)
 HEAVYEDGE_BATCH_SIZE ?= 100
+ACQUISITION_METHODS := EI LCB_kappa_0.1 LCB_kappa_1 LCB_kappa_10 PI
 BO_N_SIM := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),3,1000)
 FEATURE_JOBS ?= 1
 
@@ -147,12 +148,15 @@ _temp/v1/shape_loss/%.csv: scripts/v1/shape-loss.py _temp/v1/shape_features/%.cs
 	python3 $^ --lambda_H=0.05 --lambda_b=0.01 --lambda_phi=1 -o $@
 
 benchmarks/v1/BO.EI.npy: scripts/v1/bo-benchmark.py _temp/v1/dimless.csv _temp/v1/shape_loss/minirocket.sigmoid.csv
+	mkdir -p $(@D)
 	python3 $^ --acquisition=EI --n-sim=$(BO_N_SIM) --n-jobs=$(FEATURE_JOBS) -o $@
 
 benchmarks/v1/BO.LCB_kappa_%.npy: scripts/v1/bo-benchmark.py _temp/v1/dimless.csv _temp/v1/shape_loss/minirocket.sigmoid.csv
+	mkdir -p $(@D)
 	python3 $^ --acquisition=LCB --kappa=$* --n-sim=$(BO_N_SIM) --n-jobs=$(FEATURE_JOBS) -o $@
 
 benchmarks/v1/BO.PI.npy: scripts/v1/bo-benchmark.py _temp/v1/dimless.csv _temp/v1/shape_loss/minirocket.sigmoid.csv
+	mkdir -p $(@D)
 	python3 $^ --acquisition=PI --n-sim=$(BO_N_SIM) --n-jobs=$(FEATURE_JOBS) -o $@
 
 examples/v1/phi-profiles.h5: _temp/v1/mean_profiles.h5 _temp/v1/phi-index.npy
@@ -182,5 +186,5 @@ examples/v1/classifier.ipynb: examples/v1/dimless.csv $(foreach method,$(CALIBRA
 examples/v1/shape_features.ipynb: examples/v1/dimless.csv examples/v1/shape_features/minirocket.sigmoid.csv .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@
 
-examples/v1/bo.ipynb: benchmarks/v1/BO.EI.npy
+examples/v1/bo.ipynb: $(foreach method,$(ACQUISITION_METHODS),benchmarks/v1/BO.$(method).npy)
 	jupyter nbconvert --to notebook --execute --inplace $@
