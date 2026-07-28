@@ -21,6 +21,12 @@ parser.add_argument("ell", type=pathlib.Path, help="Loss csv file.")
 parser.add_argument("--acquisition", choices=["EI", "LCB", "PI"])
 parser.add_argument("--kappa", type=float, help="LCB kappa value.")
 parser.add_argument(
+    "--n-estimators",
+    type=int,
+    required=True,
+    help="Number of estimators for Random Forest.",
+)
+parser.add_argument(
     "--n-sim", type=int, required=True, help="Number of Monte Carlo simulations."
 )
 parser.add_argument(
@@ -149,7 +155,9 @@ try:
     ) as executor:
         logger.info(f"{args.out}: Initializing simulations...")
         futures = [
-            executor.submit(run_simulation, sim_no, idxs0, 300, acquisition_function)
+            executor.submit(
+                run_simulation, sim_no, idxs0, args.n_estimators, acquisition_function
+            )
             for sim_no, idxs0 in enumerate(idxs0s)
         ]
         signal.signal(signal.SIGTERM, partial(signal_handler, futures))

@@ -10,7 +10,8 @@ PROCESS_VARIABLES_v1 := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),dataset1,$(shell
 CALIBRATION_METHODS_v1 := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),sigmoid,sigmoid isotonic sigmoid_ovo isotonic_ovo temperature)
 HEAVYEDGE_BATCH_SIZE ?= 100
 ACQUISITION_METHODS := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),EI,EI LCB_kappa_0.1 LCB_kappa_1 LCB_kappa_10 PI)
-BO_N_SIM := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),3,1000)
+RF_N_ESTIMATORS := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),2,300)
+BO_N_SIM := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),1,1000)
 FEATURE_JOBS ?= 1
 
 all: datasets examples
@@ -149,15 +150,15 @@ _temp/v1/shape_loss/%.csv: scripts/v1/shape-loss.py _temp/v1/shape_features/%.cs
 
 benchmarks/v1/BO.EI.npy: scripts/v1/bo-benchmark.py _temp/v1/dimless.csv _temp/v1/shape_loss/minirocket.sigmoid.csv
 	mkdir -p $(@D)
-	python3 $^ --acquisition=EI --n-sim=$(BO_N_SIM) --n-jobs=$(FEATURE_JOBS) -o $@
+	python3 $^ --acquisition=EI --n-estimators=$(RF_N_ESTIMATORS) --n-sim=$(BO_N_SIM) --n-jobs=$(FEATURE_JOBS) -o $@
 
 benchmarks/v1/BO.LCB_kappa_%.npy: scripts/v1/bo-benchmark.py _temp/v1/dimless.csv _temp/v1/shape_loss/minirocket.sigmoid.csv
 	mkdir -p $(@D)
-	python3 $^ --acquisition=LCB --kappa=$* --n-sim=$(BO_N_SIM) --n-jobs=$(FEATURE_JOBS) -o $@
+	python3 $^ --acquisition=LCB --kappa=$* --n-estimators=$(RF_N_ESTIMATORS) --n-sim=$(BO_N_SIM) --n-jobs=$(FEATURE_JOBS) -o $@
 
 benchmarks/v1/BO.PI.npy: scripts/v1/bo-benchmark.py _temp/v1/dimless.csv _temp/v1/shape_loss/minirocket.sigmoid.csv
 	mkdir -p $(@D)
-	python3 $^ --acquisition=PI --n-sim=$(BO_N_SIM) --n-jobs=$(FEATURE_JOBS) -o $@
+	python3 $^ --acquisition=PI --n-estimators=$(RF_N_ESTIMATORS) --n-sim=$(BO_N_SIM) --n-jobs=$(FEATURE_JOBS) -o $@
 
 examples/v1/phi-profiles.h5: _temp/v1/mean_profiles.h5 _temp/v1/phi-index.npy
 	heavyedge filter $^ -o $@
