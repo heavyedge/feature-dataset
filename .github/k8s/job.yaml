@@ -7,7 +7,6 @@ metadata:
     creator: "${KUBE_USERNAME}"
 spec:
   ttlSecondsAfterFinished: 1800
-  activeDeadlineSeconds: 21600
   backoffLimit: 0
   template:
     metadata:
@@ -32,10 +31,10 @@ spec:
           imagePullPolicy: Always
           resources:
             requests:
-              memory: "32Gi"
+              memory: "8Gi"
               cpu: "${CPU_REQUEST}"
             limits:
-              memory: "32Gi"
+              memory: "8Gi"
               cpu: "${CPU_REQUEST}"
           command: ["/bin/sh", "-c"]
           args:
