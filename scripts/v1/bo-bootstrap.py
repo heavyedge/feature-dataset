@@ -23,7 +23,7 @@ ef = EF(top5p)
 af = AF(top5p)
 
 B = args.num_bootstrap
-ci = [5, 95]
+ci = [2.5, 97.5]
 random_state = 0
 
 boot_top5p = bootstrap_median(top5p, B, ci, random_state)  # (3, N)
