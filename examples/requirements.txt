@@ -1,4 +1,4 @@
-paretoset
+umap-learn
 matplotlib
 ipykernel
 nbconvert

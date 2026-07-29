@@ -11,6 +11,7 @@ CALIBRATION_METHODS_v1 := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),sigmoid,sigmoi
 HEAVYEDGE_BATCH_SIZE ?= 100
 ACQUISITION_METHODS := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),EI,EI LCB_kappa_0.1 LCB_kappa_1 LCB_kappa_10 PI)
 RF_N_ESTIMATORS := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),2,300)
+BO_ITER := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),2,50)
 BO_N_SIM := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),1,1000)
 BO_N_BOOTSTRAP := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),1,10000)
 FEATURE_JOBS ?= 1
@@ -82,10 +83,6 @@ $(foreach \
 	) \
 )
 
-_temp/v1/class_proba/mean_profiles.csv: $(foreach dataset,$(call DATASETS_v1,mean_profiles),_temp/v1/class_proba/mean_profiles/$(dataset).minirocket.sigmoid.csv)
-	mkdir -p $(@D)
-	python3 -c "import pandas as pd; dfs = [pd.read_csv(path) for path in '$^'.split()]; pd.concat(dfs).to_csv('$@', index=False)"
-
 # e.g., _temp/v1/wet_thickness/mean_profiles/dataset1.csv
 define WET_THICKNESS_v1
 _temp/v1/wet_thickness/$(1)/$(2).csv: scripts/v1/wet-thickness.py _data/v1/$(1)/$(2) _data/v1/process_variables/$(2).csv _data/v1/datapackage.json
@@ -128,10 +125,14 @@ datasets/v1/shape_features/%.csv: _temp/v1/shape_features/%.minirocket.sigmoid.c
 
 # Examples and Benchmarks
 
+examples/v1/class_proba.csv: $(foreach dataset,$(call DATASETS_v1,mean_profiles),_temp/v1/class_proba/mean_profiles/$(dataset).minirocket.sigmoid.csv)
+	mkdir -p $(@D)
+	python3 -c "import pandas as pd; dfs = [pd.read_csv(path) for path in '$^'.split()]; pd.concat(dfs).to_csv('$@', index=False)"
+
 _temp/v1/mean_profiles.h5: $(foreach dataset,$(call DATASETS_v1,mean_profiles),_temp/v1/mean_profiles/$(dataset).h5)
 	heavyedge merge $^ -o $@
 
-_temp/v1/phi-index.npy: scripts/v1/phi-index.py _temp/v1/shape_features/minirocket.sigmoid.csv _temp/v1/class_proba/mean_profiles.csv
+_temp/v1/phi-index.npy: scripts/v1/phi-index.py _temp/v1/shape_features/minirocket.sigmoid.csv examples/v1/class_proba.csv
 	python3 $^ -o $@
 
 _temp/v1/dimless.csv: scripts/v1/write-dimless.py $(foreach dataset,$(PROCESS_VARIABLES_v1),_data/v1/process_variables/$(dataset).csv) _data/v1/datapackage.json
@@ -182,6 +183,14 @@ examples/v1/shape_features/%.csv: _temp/v1/shape_features/%.csv _temp/v1/example
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd, numpy as np; df = pd.read_csv('$^'.split()[0]); idx = np.load('$^'.split()[1]); df.iloc[idx].to_csv('$@', index=False)"
 
+examples/v1/umap-embedding.csv: scripts/v1/embed-umap.py _temp/v1/mean_profiles.h5 examples/v1/class_proba.csv
+	python3 $^ -o $@
+
+examples/v1/BO-idxs.csv: scripts/v1/bo.py _temp/v1/dimless.csv _temp/v1/shape_loss/minirocket.sigmoid.csv
+	python3 $^ --init 0 1 --iter $(BO_ITER) -o $@
+
+# Notebooks
+
 examples/v1/phi.ipynb: examples/v1/phi-profiles.h5 examples/v1/phi-features.csv examples/v1/phi-hist.csv .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@
 
@@ -191,5 +200,5 @@ examples/v1/classifier.ipynb: examples/v1/dimless.csv $(foreach method,$(CALIBRA
 examples/v1/shape_features.ipynb: examples/v1/dimless.csv examples/v1/shape_features/minirocket.sigmoid.csv .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@
 
-examples/v1/bo.ipynb: $(foreach method,$(ACQUISITION_METHODS),benchmarks/v1/Bootstrap.BO.$(method).csv) .FORCE
+examples/v1/bo.ipynb: examples/v1/umap-embedding.csv examples/v1/BO-idxs.csv $(foreach method,$(ACQUISITION_METHODS),benchmarks/v1/Bootstrap.BO.$(method).csv) .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@

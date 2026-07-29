@@ -11,7 +11,7 @@ from multiprocessing import shared_memory
 
 import numpy as np
 import pandas as pd
-from bo import EI, LCB, PI, simulate_bo
+from bo_util import EI, LCB, PI, simulate_bo
 
 warnings.filterwarnings("ignore")
 
@@ -105,9 +105,6 @@ def signal_handler(futures, X_shm, ell_shm, signum, frame):
         future.cancel()
     cleanup_shared_memory(X_shm, ell_shm)
     exit(0)
-
-
-atexit.register(cleanup_shared_memory)
 
 
 def main():
