@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 from scipy.stats import norm
 from sklearn.ensemble import RandomForestRegressor
@@ -10,6 +12,10 @@ __all__ = [
     "bo",
     "simulate_bo",
 ]
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 def rf_predict(X, rf):
@@ -48,7 +54,7 @@ def PI(X, gp, y_best):
 def bo(X, ell, sample_idxs, n_iter, n_estimators=300, random_state=0):
     sample_idx = np.array(sample_idxs)
     rf = RandomForestRegressor(n_estimators=n_estimators, random_state=random_state)
-    for _ in range(n_iter):
+    for iteration in range(n_iter):
         X_train = X[sample_idx]
         y_train = ell[sample_idx]
         X_pool = np.delete(X, sample_idx, axis=0)
@@ -61,6 +67,13 @@ def bo(X, ell, sample_idxs, n_iter, n_estimators=300, random_state=0):
             np.argmax(acquisition_values)
         ]
         sample_idx = np.append(sample_idx, next_idx)
+        logger.info(
+            "BO iteration %d/%d: selected index %d (best objective: %s)",
+            iteration + 1,
+            n_iter,
+            next_idx,
+            y_best,
+        )
     return sample_idx
 
 

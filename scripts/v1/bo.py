@@ -22,5 +22,5 @@ X = df.drop(columns=["name", "cosine_of_contact_angle"]).to_numpy()
 ell = pd.read_csv(args.ell)["shape_loss"].to_numpy()
 initial_idxs = np.array(args.init, dtype=int)
 
-bo_idxs = bo(X, ell, initial_idxs, args.iter)
+bo_idxs = bo(X, ell, initial_idxs, min(args.iter, len(X) - len(initial_idxs)))
 pd.DataFrame({"idxs": bo_idxs[len(args.init) :]}).to_csv(args.out, index=False)

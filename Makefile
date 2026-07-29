@@ -11,6 +11,7 @@ CALIBRATION_METHODS_v1 := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),sigmoid,sigmoi
 HEAVYEDGE_BATCH_SIZE ?= 100
 ACQUISITION_METHODS := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),EI,EI LCB_kappa_0.1 LCB_kappa_1 LCB_kappa_10 PI)
 RF_N_ESTIMATORS := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),2,300)
+BO_ITER := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),2,50)
 BO_N_SIM := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),1,1000)
 BO_N_BOOTSTRAP := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),1,10000)
 FEATURE_JOBS ?= 1
@@ -186,7 +187,7 @@ examples/v1/umap-embedding.csv: scripts/v1/embed-umap.py _temp/v1/mean_profiles.
 	python3 $^ -o $@
 
 examples/v1/BO-idxs.csv: scripts/v1/bo.py _temp/v1/dimless.csv _temp/v1/shape_loss/minirocket.sigmoid.csv
-	python3 $^ --init 0 1 --iter 30 -o $@
+	python3 $^ --init 0 1 --iter $(BO_ITER) -o $@
 
 # Notebooks
 
