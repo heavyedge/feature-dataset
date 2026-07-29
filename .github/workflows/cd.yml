@@ -75,6 +75,7 @@ jobs:
       doc_deploy_mode: ${{ steps.configuration.outputs.doc_deploy_mode }}
       upstream_revision: ${{ steps.configuration.outputs.upstream_revision }}
       upstream_repo_id: ${{ steps.configuration.outputs.upstream_repo_id }}
+      doc_upstream_revision: ${{ steps.configuration.outputs.doc_upstream_revision }}
       email_recipient: ${{ steps.email.outputs.email }}
 
     steps:
@@ -349,6 +350,7 @@ jobs:
           GITHUB_REF_NAME: ${{ github.ref_name }}
           UPSTREAM_REVISION: ${{ needs.resolve-variables.outputs.upstream_revision }}
           UPSTREAM_REPO_ID: ${{ needs.resolve-variables.outputs.upstream_repo_id }}
+          DOC_UPSTREAM_REVISION: ${{ needs.resolve-variables.outputs.doc_upstream_revision }}
           GITHUB_DISPATCH_REF: ${{ github.head_ref || github.ref_name }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           SMTP_NOTIFY_RECIPIENT: ${{ needs.resolve-variables.outputs.email_recipient }}

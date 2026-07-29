@@ -41,6 +41,10 @@ def parse_tag(tag, version):
     return f"{tag_prefix}{version.major}.{version.minor}.{version.micro}{pre}"
 
 
+def remove_dev_component(tag):
+    return re.sub(r"\.dev[0-9]+$", "", tag)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Resolve CD workflow configuration")
     parser.add_argument("--event-name", required=True)
@@ -49,17 +53,24 @@ def main():
 
     is_release = args.event_name == "release"
 
-    build_mode = "test"  # build: final/pre, pull: post, test: dev/push&PR
-    deploy_mode = "false"  # true: final/pre/post, false: post/dev/push&PR
-    doc_build_mode = "test"  # build: final/pre/post, test: dev/push&PR
-    doc_deploy_mode = "false"  # true: final/pre/post, false: dev/push&PR
+    build_mode = "test"  # build: final/pre, pull: post/dev, test: push&PR
+    deploy_mode = "false"  # true: releases, false: push&PR
+    doc_build_mode = "test"  # build: final/pre/post, pull: dev, test: push&PR
+    doc_deploy_mode = "false"  # true: releases, false: push&PR
     upstream_revision = ""
     upstream_repo_id = ""
+    doc_upstream_revision = ""
     if is_release:
         try:
             version = parse_release_version(args.ref_name)
             if version.dev is not None:
-                pass
+                build_mode = "pull"
+                upstream_revision = remove_dev_component(args.ref_name)
+                upstream_repo_id = "jeesoo9595/heavyedge-features"
+                deploy_mode = "true"
+                doc_build_mode = "pull"
+                doc_deploy_mode = "true"
+                doc_upstream_revision = upstream_revision
             elif version.post is not None:
                 build_mode = "pull"
                 upstream_revision = parse_tag(args.ref_name, version)
@@ -82,6 +93,7 @@ def main():
     github_output("doc_deploy_mode", doc_deploy_mode)
     github_output("upstream_revision", upstream_revision)
     github_output("upstream_repo_id", upstream_repo_id)
+    github_output("doc_upstream_revision", doc_upstream_revision)
 
 
 if __name__ == "__main__":

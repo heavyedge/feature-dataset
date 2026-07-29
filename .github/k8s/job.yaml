@@ -44,6 +44,10 @@ spec:
 
               python .github/k8s/send-email.py --status "Started" || true
 
+              token_status=0
+              GITHUB_APP_TOKEN="$(sh .github/k8s/app-token.sh)" || token_status=$?
+              export GITHUB_APP_TOKEN
+
               build_log_dir="$(mktemp -d)"
               build_log_pipe="$build_log_dir/output"
               mkfifo "$build_log_pipe"
@@ -59,10 +63,6 @@ spec:
                 build_conclusion=failure
               fi
               export BUILD_CONCLUSION="$build_conclusion"
-
-              token_status=0
-              GITHUB_APP_TOKEN="$(sh .github/k8s/app-token.sh)" || token_status=$?
-              export GITHUB_APP_TOKEN
 
               deploy_conclusion=success
               doc_deploy_conclusion=success
@@ -184,6 +184,8 @@ spec:
               value: "${UPSTREAM_REVISION}"
             - name: UPSTREAM_REPO_ID
               value: "${UPSTREAM_REPO_ID}"
+            - name: DOC_UPSTREAM_REVISION
+              value: "${DOC_UPSTREAM_REVISION}"
             - name: CPU_REQUEST
               value: "${CPU_REQUEST}"
           volumeMounts:
