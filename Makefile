@@ -9,6 +9,10 @@ DATASETS_v1 = $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),dataset1,$(shell ls -d _da
 PROCESS_VARIABLES_v1 := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),dataset1,$(shell ls _data/v1/process_variables/dataset*.csv | xargs -n 1 basename -s .csv))
 CALIBRATION_METHODS_v1 := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),sigmoid,sigmoid isotonic sigmoid_ovo isotonic_ovo temperature)
 HEAVYEDGE_BATCH_SIZE ?= 100
+ACQUISITION_METHODS := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),EI,EI LCB_kappa_0.1 LCB_kappa_1 LCB_kappa_10 PI)
+RF_N_ESTIMATORS := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),2,300)
+BO_N_SIM := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),1,1000)
+BO_N_BOOTSTRAP := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),1,1000)
 FEATURE_JOBS ?= 1
 
 all: datasets examples
@@ -141,6 +145,26 @@ _temp/v1/shape_features/%.csv: $(foreach dataset,$(call DATASETS_v1,mean_profile
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd; dfs = [pd.read_csv(path) for path in '$^'.split()]; pd.concat(dfs).to_csv('$@', index=False)"
 
+_temp/v1/shape_loss/%.csv: scripts/v1/shape-loss.py _temp/v1/shape_features/%.csv
+	mkdir -p $(@D)
+	python3 $^ --lambda_H=0.05 --lambda_b=0.01 --lambda_phi=1 -o $@
+
+_temp/v1/MC.BO.EI.csv: scripts/v1/bo-simulate.py _temp/v1/dimless.csv _temp/v1/shape_loss/minirocket.sigmoid.csv
+	mkdir -p $(@D)
+	python3 $^ --acquisition=EI --n-estimators=$(RF_N_ESTIMATORS) --n-sim=$(BO_N_SIM) --n-jobs=$(FEATURE_JOBS) -o $@
+
+_temp/v1/MC.BO.LCB_kappa_%.csv: scripts/v1/bo-simulate.py _temp/v1/dimless.csv _temp/v1/shape_loss/minirocket.sigmoid.csv
+	mkdir -p $(@D)
+	python3 $^ --acquisition=LCB --kappa=$* --n-estimators=$(RF_N_ESTIMATORS) --n-sim=$(BO_N_SIM) --n-jobs=$(FEATURE_JOBS) -o $@
+
+_temp/v1/MC.BO.PI.csv: scripts/v1/bo-simulate.py _temp/v1/dimless.csv _temp/v1/shape_loss/minirocket.sigmoid.csv
+	mkdir -p $(@D)
+	python3 $^ --acquisition=PI --n-estimators=$(RF_N_ESTIMATORS) --n-sim=$(BO_N_SIM) --n-jobs=$(FEATURE_JOBS) -o $@
+
+benchmarks/v1/Bootstrap.BO.%.csv: scripts/v1/bo-bootstrap.py _temp/v1/MC.BO.%.csv _temp/v1/shape_loss/minirocket.sigmoid.csv
+	mkdir -p $(@D)
+	python3 $^ --num-bootstrap=$(BO_N_BOOTSTRAP) -o $@
+
 examples/v1/phi-profiles.h5: _temp/v1/mean_profiles.h5 _temp/v1/phi-index.npy
 	heavyedge filter $^ -o $@
 
@@ -166,4 +190,7 @@ examples/v1/classifier.ipynb: examples/v1/dimless.csv $(foreach method,$(CALIBRA
 	jupyter nbconvert --to notebook --execute --inplace $@
 
 examples/v1/shape_features.ipynb: examples/v1/dimless.csv examples/v1/shape_features/minirocket.sigmoid.csv .FORCE
+	jupyter nbconvert --to notebook --execute --inplace $@
+
+examples/v1/bo.ipynb: $(foreach method,$(ACQUISITION_METHODS),benchmarks/v1/Bootstrap.BO.$(method).csv) .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@
