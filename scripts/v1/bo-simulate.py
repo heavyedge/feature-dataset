@@ -107,9 +107,6 @@ def signal_handler(futures, X_shm, ell_shm, signum, frame):
     exit(0)
 
 
-atexit.register(cleanup_shared_memory)
-
-
 def main():
     args = parse_args()
     df = pd.read_csv(args.X).drop(columns=["name", "cosine_of_contact_angle"])
