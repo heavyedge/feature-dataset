@@ -13,6 +13,7 @@ if ! curl -LsSf https://hf.co/cli/install.sh | bash; then
 fi
 
 make_targets="dataset-v1"
+set -- -j "${MAKE_JOBS}"
 case "${BUILD_MODE:-test}" in
   build)
     if ! HEAVYEDGE_TEST_MODE=0 make -j ${MAKE_JOBS} ${make_targets}; then
@@ -32,6 +33,11 @@ case "${BUILD_MODE:-test}" in
     fi
     cp -a "$overlay_dir/." datasets/
     rm -rf datasets/.cache/huggingface
+    dataset_list="${work_dir}/datasets.list"
+    find datasets -type f -print > "${dataset_list}"
+    while IFS= read -r dataset_file; do
+      set -- "$@" "--assume-old=${dataset_file}"
+    done < "${dataset_list}"
     ;;
   test)
     if ! HEAVYEDGE_TEST_MODE=1 make -j ${MAKE_JOBS} ${make_targets}; then
@@ -47,7 +53,7 @@ esac
 make_targets="examples-v1"
 case "${DOC_BUILD_MODE:-test}" in
   build)
-    if ! HEAVYEDGE_TEST_MODE=0 make -j ${MAKE_JOBS} ${make_targets}; then
+    if ! HEAVYEDGE_TEST_MODE=0 make "$@" ${make_targets}; then
       exit 3
     fi
     ;;
@@ -118,7 +124,6 @@ case "${DOC_BUILD_MODE:-test}" in
       exit 3
     fi
 
-    set -- -j "${MAKE_JOBS}"
     benchmark_list="${work_dir}/benchmarks.list"
     find benchmarks -type f -print > "${benchmark_list}"
     while IFS= read -r benchmark_file; do
@@ -129,7 +134,7 @@ case "${DOC_BUILD_MODE:-test}" in
     fi
     ;;
   test)
-    if ! HEAVYEDGE_TEST_MODE=1 make -j ${MAKE_JOBS} ${make_targets}; then
+    if ! HEAVYEDGE_TEST_MODE=1 make "$@" ${make_targets}; then
       exit 3
     fi
     ;;
