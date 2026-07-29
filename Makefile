@@ -185,6 +185,9 @@ examples/v1/shape_features/%.csv: _temp/v1/shape_features/%.csv _temp/v1/example
 examples/v1/umap-embedding.csv: scripts/v1/embed-umap.py _temp/v1/mean_profiles.h5 examples/v1/class_proba.csv
 	python3 $^ -o $@
 
+examples/v1/BO-idxs.csv: scripts/v1/bo.py _temp/v1/dimless.csv _temp/v1/shape_loss/minirocket.sigmoid.csv
+	python3 $^ --init 0 1 --iter 30 -o $@
+
 # Notebooks
 
 examples/v1/phi.ipynb: examples/v1/phi-profiles.h5 examples/v1/phi-features.csv examples/v1/phi-hist.csv .FORCE
@@ -196,5 +199,5 @@ examples/v1/classifier.ipynb: examples/v1/dimless.csv $(foreach method,$(CALIBRA
 examples/v1/shape_features.ipynb: examples/v1/dimless.csv examples/v1/shape_features/minirocket.sigmoid.csv .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@
 
-examples/v1/bo.ipynb: examples/v1/umap-embedding.csv $(foreach method,$(ACQUISITION_METHODS),benchmarks/v1/Bootstrap.BO.$(method).csv) .FORCE
+examples/v1/bo.ipynb: examples/v1/umap-embedding.csv examples/v1/BO-idxs.csv $(foreach method,$(ACQUISITION_METHODS),benchmarks/v1/Bootstrap.BO.$(method).csv) .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@

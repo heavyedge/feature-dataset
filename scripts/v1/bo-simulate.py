@@ -11,7 +11,7 @@ from multiprocessing import shared_memory
 
 import numpy as np
 import pandas as pd
-from bo import EI, LCB, PI, simulate_bo
+from bo_util import EI, LCB, PI, simulate_bo
 
 warnings.filterwarnings("ignore")
 
