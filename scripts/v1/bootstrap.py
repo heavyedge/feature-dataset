@@ -56,13 +56,28 @@ def AF(top5p):
     return ret
 
 
-def bootstrap_median(X, B, ci, random_state=None):
+def bootstrap_median(X, B, ci, random_state=None, chunk_size=256):
+    """Estimate bootstrap medians without materializing all samples at once.
+
+    ``chunk_size`` limits the number of bootstrap samples processed in one
+    batch.  The generated random numbers are consumed in the same order as
+    the unchunked implementation, so the result is reproducible for a given
+    seed (up to floating-point reduction details).
+    """
+    if B <= 0:
+        raise ValueError("B must be positive")
+    if chunk_size <= 0:
+        raise ValueError("chunk_size must be positive")
+
     N, _ = X.shape
     rng = np.random.default_rng(random_state)
-    boot_idx = rng.integers(0, N, size=(B, N))
+    boot_medians = []
+    for start in range(0, B, chunk_size):
+        size = min(chunk_size, B - start)
+        boot_idx = rng.integers(0, N, size=(size, N))
+        boot_medians.append(np.median(X[boot_idx, :], axis=1))
+    boot_medians = np.concatenate(boot_medians, axis=0)
 
-    boot_samples = X[boot_idx, :]
-    boot_medians = np.median(boot_samples, axis=1)
     E_median = boot_medians.mean(axis=0)
     ci_low, ci_high = np.percentile(boot_medians, ci, axis=0)
     return np.stack([E_median, ci_low, ci_high], axis=0)

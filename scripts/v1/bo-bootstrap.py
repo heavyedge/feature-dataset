@@ -11,6 +11,12 @@ parser.add_argument("ell", type=pathlib.Path, help="Loss csv file.")
 parser.add_argument(
     "--num-bootstrap", type=int, required=True, help="Number of bootstrap samples."
 )
+parser.add_argument(
+    "--bootstrap-chunk-size",
+    type=int,
+    default=64,
+    help="Number of bootstrap samples processed per chunk (default: 64).",
+)
 parser.add_argument("-o", "--out", type=pathlib.Path, help="Output csv file.")
 args = parser.parse_args()
 
@@ -26,9 +32,10 @@ B = args.num_bootstrap
 ci = [2.5, 97.5]
 random_state = 0
 
-boot_top5p = bootstrap_median(top5p, B, ci, random_state)  # (3, N)
-boot_ef = bootstrap_median(ef, B, ci, random_state)  # (3, N)
-boot_af = bootstrap_median(af, B, ci, random_state)  # (3, M)
+chunk_size = args.bootstrap_chunk_size
+boot_top5p = bootstrap_median(top5p, B, ci, random_state, chunk_size)  # (3, N)
+boot_ef = bootstrap_median(ef, B, ci, random_state, chunk_size)  # (3, N)
+boot_af = bootstrap_median(af, B, ci, random_state, chunk_size)  # (3, M)
 
 statistic_names = ["mean", "ci_low", "ci_high"]
 frames = []
