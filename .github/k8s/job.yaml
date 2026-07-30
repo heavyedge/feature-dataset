@@ -47,29 +47,35 @@ spec:
               GITHUB_APP_TOKEN="$(sh .github/k8s/app-token.sh)" || token_status=$?
               export GITHUB_APP_TOKEN
 
-              build_log_dir="$(mktemp -d)"
-              build_log_pipe="$build_log_dir/output"
-              mkfifo "$build_log_pipe"
-              tee < "$build_log_pipe" &
-              build_log_pid=$!
-              build_status=0
-              sh .github/k8s/build.sh >"$build_log_pipe" 2>&1 || build_status=$?
-              wait "$build_log_pid" || true
-              rm -rf "$build_log_dir"
-              if [ "$build_status" -eq 0 ]; then
-                build_conclusion=success
+              if [ "$token_status" -ne 0 ]; then
+                build_status=1
+                build_conclusion=skipped
               else
-                build_conclusion=failure
+                build_log_dir="$(mktemp -d)"
+                build_log_pipe="$build_log_dir/output"
+                mkfifo "$build_log_pipe"
+                tee < "$build_log_pipe" &
+                build_log_pid=$!
+                build_status=0
+                sh .github/k8s/build.sh >"$build_log_pipe" 2>&1 || build_status=$?
+                wait "$build_log_pid" || true
+                rm -rf "$build_log_dir"
+                if [ "$build_status" -eq 0 ]; then
+                  build_conclusion=success
+                else
+                  build_conclusion=failure
+                fi
               fi
               export BUILD_CONCLUSION="$build_conclusion"
 
-              deploy_conclusion=success
-              doc_deploy_conclusion=success
-              if [ "$build_status" -ne 0 ]; then
+              token_status=0
+              GITHUB_APP_TOKEN="$(sh .github/k8s/app-token.sh)" || token_status=$?
+              export GITHUB_APP_TOKEN
+
+              if [ "$build_status" -ne 0 ] || [ "$token_status" -ne 0 ]; then
                 deploy_status=1
                 deploy_conclusion=skipped
                 doc_deploy_conclusion=skipped
-                echo "Skipping deployment because the build failed."
               else
                 deploy_log_dir="$(mktemp -d)"
                 deploy_log_pipe="$deploy_log_dir/output"
@@ -90,6 +96,9 @@ spec:
               export DEPLOY_CONCLUSION="$deploy_conclusion"
               export DOC_DEPLOY_CONCLUSION="$doc_deploy_conclusion"
 
+              token_status=0
+              GITHUB_APP_TOKEN="$(sh .github/k8s/app-token.sh)" || token_status=$?
+              export GITHUB_APP_TOKEN
               dispatch_status=0
               sh .github/scripts/deploy-dispatch.sh || dispatch_status=$?
 
