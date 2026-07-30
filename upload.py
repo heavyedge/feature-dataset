@@ -17,10 +17,6 @@ except InvalidVersion:
     print(f"Invalid version tag: {args.tag}", file=sys.stderr)
     sys.exit(1)
 
-if version.dev is not None:
-    print(f"Skipping Hugging Face upload for dev release tag: {args.tag}")
-    sys.exit(1)
-
 api = HfApi(token=os.getenv("HUGGINGFACE_TOKEN"))
 
 VERSION = args.tag
