@@ -14,8 +14,8 @@ parser.add_argument(
 parser.add_argument(
     "--bootstrap-chunk-size",
     type=int,
-    default=256,
-    help="Number of bootstrap samples processed per chunk (default: 256).",
+    default=64,
+    help="Number of bootstrap samples processed per chunk (default: 64).",
 )
 parser.add_argument("-o", "--out", type=pathlib.Path, help="Output csv file.")
 args = parser.parse_args()
