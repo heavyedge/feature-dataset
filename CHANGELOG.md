@@ -18,6 +18,7 @@ Classification model:
 ### Changed
 
 - Change dependent repo ids.
+- Dataset repository is changed to `heavyedge/shape-features`.
 
 ## [v1.0.0a4.post1] - 2026-07-31
 
