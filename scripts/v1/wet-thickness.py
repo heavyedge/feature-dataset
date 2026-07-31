@@ -15,7 +15,7 @@ args = parser.parse_args()
 
 
 def count_profiles(profiles_dir):
-    paths = list(profiles_dir.glob("**/*.h5"))
+    paths = sorted(profiles_dir.glob("*.h5"))
     num_profiles = []
     for path in paths:
         with ProfileData(path) as profiles:

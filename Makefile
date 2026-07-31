@@ -119,9 +119,13 @@ $(foreach \
 	) \
 )
 
-datasets/v1/shape_features/%.csv: _temp/v1/shape_features/%.minirocket.sigmoid.csv
+datasets/v1/shape_features/profiles/%.csv: scripts/v1/write-features.py _data/v1/profiles/% _temp/v1/shape_features/profiles/%.minirocket.sigmoid.csv
 	mkdir -p $(@D)
-	cp $< $@
+	python3 $^ -o $@
+
+datasets/v1/shape_features/mean_profiles/%.csv: scripts/v1/write-features.py _data/v1/mean_profiles/% _temp/v1/shape_features/mean_profiles/%.minirocket.sigmoid.csv
+	mkdir -p $(@D)
+	python3 $^ -o $@
 
 # Examples and Benchmarks
 

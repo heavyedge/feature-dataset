@@ -21,6 +21,11 @@
     "schema": {
         "fields": [
           {
+            "name": "name",
+            "type": "string",
+            "description": "Experiment name"
+          },
+          {
             "name": "H",
             "type": "number",
             "unit": "none",
@@ -51,6 +56,11 @@
     "type": "table",
     "schema": {
         "fields": [
+          {
+            "name": "name",
+            "type": "string",
+            "description": "Experiment name"
+          },
           {
             "name": "H",
             "type": "number",
