@@ -6,7 +6,7 @@ metadata:
   annotations:
     creator: "${KUBE_USERNAME}"
 spec:
-  ttlSecondsAfterFinished: 1800
+  ttlSecondsAfterFinished: 259200
   backoffLimit: 0
   template:
     metadata:
