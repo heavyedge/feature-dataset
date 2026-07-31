@@ -13,7 +13,7 @@ curl -LsSf https://hf.co/cli/install.sh | bash
   else
       include="--include v1/profiles/*.tar.gz --include v1/mean_profiles/*.tar.gz --include v1/process_variables/*.csv --include v1/datapackage.json"
   fi
-  "$HOME/.local/bin/hf" download jeesoo9595/heavyedge-profiles --token "$HUGGINGFACE_TOKEN" --repo-type dataset --revision v1.0.0rc2 $include --local-dir _data/
+  "$HOME/.local/bin/hf" download heavyedge/profiles --token "$HUGGINGFACE_TOKEN" --repo-type dataset --revision v1.0.0rc3 $include --local-dir _data/
   for dataset in _data/v1/profiles/*.tar.gz; do
       stem=$(basename "$dataset" .tar.gz)
       dirname=_data/v1/profiles/"$stem"
@@ -31,7 +31,7 @@ curl -LsSf https://hf.co/cli/install.sh | bash
 profiles_pid=$!
 
 (
-  "$HOME/.local/bin/hf" download jeesoo9595/heavyedge-classify-v1 --token "$HUGGINGFACE_TOKEN" --repo-type model --revision v1.0.0a1 --include "classifiers/*" --local-dir _models
+  "$HOME/.local/bin/hf" download heavyedge/classifier-v1 --token "$HUGGINGFACE_TOKEN" --repo-type model --revision v1.0.0a2 --include "classifiers/*" --local-dir _models
 ) &
 models_pid=$!
 

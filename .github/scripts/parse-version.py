@@ -66,7 +66,7 @@ def main():
             if version.dev is not None:
                 build_mode = "pull"
                 upstream_revision = remove_dev_component(args.ref_name)
-                upstream_repo_id = "jeesoo9595/heavyedge-features"
+                upstream_repo_id = "heavyedge/shape-features"
                 deploy_mode = "true"
                 doc_build_mode = "pull"
                 doc_deploy_mode = "true"
@@ -74,7 +74,7 @@ def main():
             elif version.post is not None:
                 build_mode = "pull"
                 upstream_revision = parse_tag(args.ref_name, version)
-                upstream_repo_id = "jeesoo9595/heavyedge-features"
+                upstream_repo_id = "heavyedge/shape-features"
                 deploy_mode = "true"
                 doc_build_mode = "build"
                 doc_deploy_mode = "true"

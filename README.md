@@ -1,5 +1,5 @@
 # Edge Feature Dataset
-[![HuggingFace](https://img.shields.io/badge/HuggingFace-Dataset-orange?logo=huggingface)](https://huggingface.co/datasets/jeesoo9595/heavyedge-features)
+[![HuggingFace](https://img.shields.io/badge/HuggingFace-Dataset-orange?logo=huggingface)](https://huggingface.co/datasets/heavyedge/shape-features)
 [![GitHub repository](https://img.shields.io/badge/github-repo-blue?logo=github)](https://github.com/heavyedge/feature-dataset)
 
 Edge profile shape feature dataset.
@@ -39,7 +39,7 @@ export HUGGINGFACE_TOKEN="..."
 
 ### Acquiring the shape feature data
 
-The shape feature data built by this project can be acquired by downloading it directly from the [dataset repository](https://huggingface.co/datasets/jeesoo9595/heavyedge-features).
+The shape feature data built by this project can be acquired by downloading it directly from the [dataset repository](https://huggingface.co/datasets/heavyedge/shape-features).
 Alternatively, you can perform the feature extraction yourself if you have downloaded the prerequisites.
 
 Either approach creates the feature data in the `datasets` directory.
@@ -53,7 +53,7 @@ You need:
 Run the following command:
 
 ```sh
-hf download jeesoo9595/heavyedge-features --repo-type dataset --local-dir datasets
+hf download heavyedge/shape-features --repo-type dataset --local-dir datasets
 ```
 
 #### Building the dataset
