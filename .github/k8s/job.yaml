@@ -77,6 +77,8 @@ spec:
                 deploy_conclusion=skipped
                 doc_deploy_conclusion=skipped
               else
+                deploy_conclusion=success
+                doc_deploy_conclusion=success
                 deploy_log_dir="$(mktemp -d)"
                 deploy_log_pipe="$deploy_log_dir/output"
                 mkfifo "$deploy_log_pipe"
