@@ -13,7 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `jeesoo9595/classifier-v1:v1.0.0`
 - Feature extractor: `heavyedge-features==1.2.0.dev0`
 
-## [1.0.0rc2] - Unreleased
+## [1.0.0rc3] - Unreleased
+
+### Fixed
+
+- `name` field in dataset csv files are now restored.
+
+## [1.0.0rc2] - 2026-08-17
 
 ### Fixed
 
