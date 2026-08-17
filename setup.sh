@@ -19,7 +19,7 @@ requirements_pid=$!
   else
       include="--include v1/profiles/*.tar.gz --include v1/mean_profiles/*.tar.gz --include v1/process_variables/*.csv --include v1/datapackage.json"
   fi
-  hf download heavyedge/profiles --token "$HUGGINGFACE_TOKEN" --repo-type dataset --revision v1.0.0rc3 $include --local-dir _data/
+  hf download heavyedge/profiles --token "$HUGGINGFACE_TOKEN" --repo-type dataset --revision v1.0.0 $include --local-dir _data/
   for dataset in _data/v1/profiles/*.tar.gz; do
       stem=$(basename "$dataset" .tar.gz)
       dirname=_data/v1/profiles/"$stem"
@@ -37,7 +37,7 @@ requirements_pid=$!
 profiles_pid=$!
 
 (
-  hf download heavyedge/classifier-v1 --token "$HUGGINGFACE_TOKEN" --repo-type model --revision v1.0.0a2 --include "classifiers/*" --local-dir _models
+  hf download heavyedge/classifier-v1 --token "$HUGGINGFACE_TOKEN" --repo-type model --revision v1.0.0 --include "classifiers/*" --local-dir _models
 ) &
 models_pid=$!
 

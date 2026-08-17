@@ -1,5 +1,5 @@
 numpy<2.4.0
 heavyedge-classify==1.4.0
-heavyedge-features==1.1.0a3
+heavyedge-features==1.1.0
 pandas
 pint
