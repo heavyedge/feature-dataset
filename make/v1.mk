@@ -109,15 +109,19 @@ datasets/v1/shape_features/mean_profiles/%.csv: _temp/v1/shape_features/mean_pro
 
 # # Examples and Benchmarks
 
-# examples/v1/class_proba.csv: $(foreach dataset,$(call DATASETS_v1,mean_profiles),_temp/v1/class_proba/mean_profiles/$(dataset).minirocket.sigmoid.csv)
-# 	mkdir -p $(@D)
-# 	python3 -c "import pandas as pd; dfs = [pd.read_csv(path) for path in '$^'.split()]; pd.concat(dfs).to_csv('$@', index=False)"
+_temp/v1/shape_features/mean_profiles/minirocket.sigmoid.csv: $(foreach dataset,$(call DATASETS_v1,mean_profiles),_temp/v1/shape_features/mean_profiles/$(dataset).minirocket.sigmoid.csv)
+	mkdir -p $(@D)
+	python3 -c "import pandas as pd; dfs = [pd.read_csv(path) for path in '$^'.split()]; pd.concat(dfs).to_csv('$@', index=False)"
 
-# _temp/v1/mean_profiles.h5: $(foreach dataset,$(call DATASETS_v1,mean_profiles),_temp/v1/mean_profiles/$(dataset).h5)
-# 	heavyedge merge $^ -o $@
+_temp/v1/class_proba.csv: $(foreach dataset,$(call DATASETS_v1,mean_profiles),_temp/v1/class_proba/mean_profiles/$(dataset).minirocket.sigmoid.csv)
+	mkdir -p $(@D)
+	python3 -c "import pandas as pd; dfs = [pd.read_csv(path) for path in '$^'.split()]; pd.concat(dfs).to_csv('$@', index=False)"
 
-# _temp/v1/phi-index.npy: scripts/v1/phi-index.py _temp/v1/shape_features/minirocket.sigmoid.csv examples/v1/class_proba.csv
-# 	python3 $^ -o $@
+_temp/v1/mean_profiles.h5: $(foreach dataset,$(call DATASETS_v1,mean_profiles),_temp/v1/mean_profiles/$(dataset).h5)
+	heavyedge merge $^ -o $@
+
+_temp/v1/phi-index.npy: scripts/v1/phi-index.py _temp/v1/shape_features/mean_profiles/minirocket.sigmoid.csv _temp/v1/class_proba.csv
+	python3 $^ -o $@
 
 # _temp/v1/dimless.csv: scripts/v1/write-dimless.py $(foreach dataset,$(PROCESS_VARIABLES_v1),_data/v1/process_variables/$(dataset).csv) _data/v1/datapackage.json
 # 	mkdir -p $(@D)
@@ -167,7 +171,7 @@ datasets/v1/shape_features/mean_profiles/%.csv: _temp/v1/shape_features/mean_pro
 # 	mkdir -p $(@D)
 # 	python3 -c "import pandas as pd, numpy as np; df = pd.read_csv('$^'.split()[0]); idx = np.load('$^'.split()[1]); df.iloc[idx].to_csv('$@', index=False)"
 
-# examples/v1/umap-embedding.csv: scripts/v1/embed-umap.py _temp/v1/mean_profiles.h5 examples/v1/class_proba.csv
+# examples/v1/umap-embedding.csv: scripts/v1/embed-umap.py _temp/v1/mean_profiles.h5 _temp/v1/class_proba.csv
 # 	python3 $^ -o $@
 
 # examples/v1/BO-idxs.csv: scripts/v1/bo.py _temp/v1/dimless.csv _temp/v1/shape_loss/minirocket.sigmoid.csv
