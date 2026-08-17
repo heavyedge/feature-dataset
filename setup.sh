@@ -2,10 +2,16 @@
 
 pip install uv
 
-uv pip install --system -r requirements.txt -r examples/requirements.txt
+uv tool install --force 'huggingface_hub[cli]'
+export PATH="$(uv tool dir --bin):$PATH"
+export HF_TOKEN="${HF_TOKEN:-$HUGGINGFACE_TOKEN}"
 
 mkdir -p ./_data/v1/ ./_models
-curl -LsSf https://hf.co/cli/install.sh | bash
+
+(
+    uv pip install --system -r requirements.txt -r examples/requirements.txt
+) &
+requirements_pid=$!
 
 (
   if [ "${HEAVYEDGE_TEST_MODE:-}" = "1" ]; then
@@ -13,7 +19,7 @@ curl -LsSf https://hf.co/cli/install.sh | bash
   else
       include="--include v1/profiles/*.tar.gz --include v1/mean_profiles/*.tar.gz --include v1/process_variables/*.csv --include v1/datapackage.json"
   fi
-  "$HOME/.local/bin/hf" download heavyedge/profiles --token "$HUGGINGFACE_TOKEN" --repo-type dataset --revision v1.0.0rc3 $include --local-dir _data/
+  hf download heavyedge/profiles --token "$HUGGINGFACE_TOKEN" --repo-type dataset --revision v1.0.0rc3 $include --local-dir _data/
   for dataset in _data/v1/profiles/*.tar.gz; do
       stem=$(basename "$dataset" .tar.gz)
       dirname=_data/v1/profiles/"$stem"
@@ -31,9 +37,10 @@ curl -LsSf https://hf.co/cli/install.sh | bash
 profiles_pid=$!
 
 (
-  "$HOME/.local/bin/hf" download heavyedge/classifier-v1 --token "$HUGGINGFACE_TOKEN" --repo-type model --revision v1.0.0a2 --include "classifiers/*" --local-dir _models
+  hf download heavyedge/classifier-v1 --token "$HUGGINGFACE_TOKEN" --repo-type model --revision v1.0.0a2 --include "classifiers/*" --local-dir _models
 ) &
 models_pid=$!
 
+wait "$requirements_pid"
 wait "$profiles_pid"
 wait "$models_pid"

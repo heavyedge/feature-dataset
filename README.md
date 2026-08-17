@@ -139,18 +139,9 @@ This repository follows semantic versioning with [Python version specifiers](htt
 N.N.N[{a|b|rc}N][.postN][.devN]
 ```
 
-- Final release and pre-release (`N.N.N[{a|b|rc}N]`):
-  - Dataset is re-built and deployed to HuggingFace.
-  - Benchmarks are re-evaluated using the new dataset and uploaded as release artifacts.
-  - Examples are re-built using the new dataset and the new benchmarks and uploaded as release artifacts.
-- Post-release (`*.postN`):
-  - Dataset is pulled from the previous release and deployed to HuggingFace.
-  - Benchmarks are re-evaluated using the pulled dataset and uploaded as release artifacts.
-  - Examples are re-built using the pulled dataset and the new benchmarks and uploaded as release artifacts.
-- Developmental release (`*.devN`):
-  - Dataset is pulled from the previous release and deployed to HuggingFace.
-  - Benchmarks are pulled from the previous release and uploaded as release artifacts.
-  - Examples are re-built using the pulled dataset and the pulled benchmarks and uploaded as release artifacts.
+- Major version is raised when the dataset API is changed in a backwards-incompatible way.
+- Minor version is raised when new dataset is added.
+- Patch version is raised when bugs are fixed.
 
 > **NOTE**: The major version is raised only when the dataset is changed in a backward-incompatible way.
 > When new data is added, minor version is raised with new `datasets/v*` directory.

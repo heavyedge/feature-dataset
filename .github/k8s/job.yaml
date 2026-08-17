@@ -17,246 +17,233 @@ spec:
       nodeSelector:
           mlx.navercorp.com/zone: ${MLXP_ZONE}
       restartPolicy: Never
-      imagePullSecrets:
-        - name: regcred
+      terminationGracePeriodSeconds: 600
       volumes:
-        - name: postfix-state
+        - name: heartbeat
           emptyDir: {}
-        - name: gmail-smtp-relay
-          secret:
-            secretName: gmail-smtp-relay
-      containers:
-        - name: build
-          image: ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}
+        - name: heavyedge-run
+          emptyDir: {}
+      initContainers:
+        - name: check-monitor
+          image: python:3.13
           imagePullPolicy: Always
+          restartPolicy: Always
+          workingDir: /sidecar
           resources:
             requests:
-              memory: "32Gi"
-              cpu: "${CPU_REQUEST}"
-            limits:
-              memory: "32Gi"
-              cpu: "${CPU_REQUEST}"
-          command: ["/bin/sh", "-c"]
-          args:
-            - |
-              python .github/k8s/wait-smtp.py || echo "SMTP relay is unavailable; continuing without email notifications."
-
-              python .github/k8s/send-email.py --status "Started" || true
-
-              token_status=0
-              GITHUB_APP_TOKEN="$(sh .github/k8s/app-token.sh)" || token_status=$?
-              export GITHUB_APP_TOKEN
-
-              if [ "$token_status" -ne 0 ]; then
-                build_status=1
-                build_conclusion=skipped
-              else
-                build_log_dir="$(mktemp -d)"
-                build_log_pipe="$build_log_dir/output"
-                mkfifo "$build_log_pipe"
-                tee < "$build_log_pipe" &
-                build_log_pid=$!
-                build_status=0
-                sh .github/k8s/build.sh >"$build_log_pipe" 2>&1 || build_status=$?
-                wait "$build_log_pid" || true
-                rm -rf "$build_log_dir"
-                if [ "$build_status" -eq 0 ]; then
-                  build_conclusion=success
-                else
-                  build_conclusion=failure
-                fi
-              fi
-              export BUILD_CONCLUSION="$build_conclusion"
-
-              token_status=0
-              GITHUB_APP_TOKEN="$(sh .github/k8s/app-token.sh)" || token_status=$?
-              export GITHUB_APP_TOKEN
-
-              if [ "$build_status" -ne 0 ] || [ "$token_status" -ne 0 ]; then
-                deploy_status=1
-                deploy_conclusion=skipped
-                doc_deploy_conclusion=skipped
-              else
-                deploy_conclusion=success
-                doc_deploy_conclusion=success
-                deploy_log_dir="$(mktemp -d)"
-                deploy_log_pipe="$deploy_log_dir/output"
-                mkfifo "$deploy_log_pipe"
-                tee < "$deploy_log_pipe" &
-                deploy_log_pid=$!
-                deploy_status=0
-                sh .github/k8s/deploy.sh >"$deploy_log_pipe" 2>&1 || deploy_status=$?
-                wait "$deploy_log_pid" || true
-                rm -rf "$deploy_log_dir"
-                if [ $((deploy_status & 2)) -ne 0 ]; then
-                  deploy_conclusion=failure
-                fi
-                if [ $((deploy_status & 4)) -ne 0 ]; then
-                  doc_deploy_conclusion=failure
-                fi
-              fi
-              export DEPLOY_CONCLUSION="$deploy_conclusion"
-              export DOC_DEPLOY_CONCLUSION="$doc_deploy_conclusion"
-
-              token_status=0
-              GITHUB_APP_TOKEN="$(sh .github/k8s/app-token.sh)" || token_status=$?
-              export GITHUB_APP_TOKEN
-              dispatch_status=0
-              sh .github/scripts/deploy-dispatch.sh || dispatch_status=$?
-
-              exit_code=0
-              if [ "$build_status" -ne 0 ]; then
-                exit_code=$((exit_code + 1))
-              fi
-              if [ "$token_status" -ne 0 ]; then
-                exit_code=$((exit_code + 2))
-              fi
-              if [ $((deploy_status & 6)) -ne 0 ]; then
-                exit_code=$((exit_code + 4))
-              fi
-              if [ "$dispatch_status" -ne 0 ]; then
-                exit_code=$((exit_code + 8))
-              fi
-
-              email_status=Failed
-              if [ "$exit_code" -eq 0 ]; then
-                email_status=Completed
-              fi
-              python .github/k8s/send-email.py --status "$email_status" --exit-code "$exit_code" --build-status "$build_status" --deploy-status "$deploy_status" || true
-
-              touch /var/run/heavyedge/deploy.done
-              exit "$exit_code"
-          env:
-            - name: GH_APP_ID
-              valueFrom:
-                secretKeyRef:
-                  name: github-app
-                  key: GH_APP_ID
-            - name: GH_APP_PRIVATE_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: github-app
-                  key: GH_APP_PRIVATE_KEY
-            - name: GH_APP_INSTALLATION_ID
-              valueFrom:
-                secretKeyRef:
-                  name: github-app
-                  key: GH_APP_INSTALLATION_ID
-                  optional: true
-            - name: GITHUB_REPOSITORY
-              value: "${GITHUB_REPOSITORY}"
-            - name: KUBERNETES_JOB_NAME
-              value: "${JOB_NAME}"
-            - name: BUILD_CHECK_RUN_ID
-              value: "${BUILD_CHECK_RUN_ID}"
-            - name: DEPLOY_CHECK_RUN_ID
-              value: "${DEPLOY_CHECK_RUN_ID}"
-            - name: DOC_DEPLOY_CHECK_RUN_ID
-              value: "${DOC_DEPLOY_CHECK_RUN_ID}"
-            - name: MAKE_JOBS
-              value: "${MAKE_JOBS}"
-            - name: FEATURE_JOBS
-              value: "${FEATURE_JOBS}"
-            - name: CLEANUP_CHECK_RUN_ID
-              value: "${CLEANUP_CHECK_RUN_ID}"
-            - name: IMAGE_TAG
-              value: "${IMAGE_TAG}"
-            - name: GITHUB_REF_NAME
-              value: "${GITHUB_REF_NAME}"
-            - name: GITHUB_DISPATCH_REF
-              value: "${GITHUB_DISPATCH_REF}"
-            - name: SMTP_NOTIFY_RECIPIENT
-              value: "${SMTP_NOTIFY_RECIPIENT}"
-            - name: PROFILES_V1_GDRIVE
-              valueFrom:
-                secretKeyRef:
-                  name: gdrive
-                  key: PROFILES_V1_GDRIVE
-            - name: CA_V1_GDRIVE
-              valueFrom:
-                secretKeyRef:
-                  name: gdrive
-                  key: CA_V1_GDRIVE
-            - name: HUGGINGFACE_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: huggingface-token
-                  key: HUGGINGFACE_TOKEN
-            - name: BUILD_MODE
-              value: "${BUILD_MODE}"
-            - name: DEPLOY_MODE
-              value: "${DEPLOY_MODE}"
-            - name: DOC_BUILD_MODE
-              value: "${DOC_BUILD_MODE}"
-            - name: DOC_DEPLOY_MODE
-              value: "${DOC_DEPLOY_MODE}"
-            - name: UPSTREAM_REVISION
-              value: "${UPSTREAM_REVISION}"
-            - name: UPSTREAM_REPO_ID
-              value: "${UPSTREAM_REPO_ID}"
-            - name: DOC_UPSTREAM_REVISION
-              value: "${DOC_UPSTREAM_REVISION}"
-            - name: CPU_REQUEST
-              value: "${CPU_REQUEST}"
-          volumeMounts:
-            - name: postfix-state
-              mountPath: /var/run/heavyedge
-        - name: postfix
-          image: boky/postfix:latest
-          imagePullPolicy: IfNotPresent
-          resources:
-            requests:
-              memory: "128Mi"
+              memory: "256Mi"
               cpu: "100m"
             limits:
-              memory: "256Mi"
-          ports:
-            - name: smtp
-              containerPort: 587
-          command: ["/bin/sh", "-c"]
+              memory: "512Mi"
+              cpu: "500m"
+          volumeMounts:
+            - name: heartbeat
+              mountPath: /heartbeat
+            - name: heavyedge-run
+              mountPath: /var/run/heavyedge
+          startupProbe:
+            exec:
+              command: ["/usr/bin/test", "-f", "/heartbeat/sidecar-ready"]
+            periodSeconds: 5
+            failureThreshold: 60
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/bash
+                  - -c
+                  - |
+                    cd /sidecar
+                    for _ in $(seq 1 30); do
+                      bash -euo pipefail .github/k8s/monitor-heartbeat.sh >/dev/null 2>&1 || true
+                      [ -f /heartbeat/check-finalized ] && exit 0
+                      sleep 1
+                    done
+          command: ["bash", "-euc"]
           args:
             - |
-              /scripts/run.sh &
-              postfix_pid=$!
+              apt-get update
+              apt-get install -y --no-install-recommends ca-certificates curl git openssl
+              git init .
+              if git remote get-url origin >/dev/null 2>&1; then
+                git remote set-url origin "https://github.com/${GITHUB_REPOSITORY}.git"
+              else
+                git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+              fi
+              git fetch --depth 1 origin "${GIT_SHA}"
+              git checkout --detach FETCH_HEAD
+              git submodule update --init --recursive --depth 1
 
-              while kill -0 "$postfix_pid" 2>/dev/null; do
-                if [ -f /var/run/heavyedge/deploy.done ]; then
-                  for attempt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
-                    postqueue -f || true
-                    if postqueue -p 2>/dev/null | grep -q "Mail queue is empty"; then
-                      break
-                    fi
-                    sleep 2
-                  done
-                  kill "$postfix_pid" 2>/dev/null || true
-                  wait "$postfix_pid" || true
-                  exit 0
+              if [ ! -f /heartbeat/check-started ]; then
+                bash -euo pipefail .github/scripts/check-run.sh in_progress "" "Job has started"
+                touch /heartbeat/check-started
+              fi
+              touch /heartbeat/sidecar-ready
+
+              shutdown_monitor() {
+                exit 0
+              }
+              trap shutdown_monitor TERM INT
+
+              while true; do
+                if ! bash -euo pipefail .github/k8s/monitor-heartbeat.sh; then
+                  echo "Could not update the check run; retrying in 5 seconds." >&2
                 fi
-                sleep 2
+                sleep 5
               done
-
-              wait "$postfix_pid" || true
+          envFrom:
+            - secretRef:
+                name: github-app
+            - configMapRef:
+                name: github-config
           env:
-            - name: RELAYHOST
-              value: "[smtp.gmail.com]:587"
-            - name: RELAYHOST_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: gmail-smtp-relay
-                  key: GMAIL_USERNAME
-            - name: RELAYHOST_PASSWORD_FILE
-              value: "/run/secrets/gmail/GMAIL_APP_PASSWORD"
-            - name: POSTFIX_smtp_tls_security_level
-              value: "encrypt"
-            - name: POSTFIX_mynetworks
-              value: "127.0.0.0/8 [::1]/128"
-            - name: ALLOW_EMPTY_SENDER_DOMAINS
-              value: "true"
-            - name: LOG_FORMAT
-              value: "json"
+            - name: GIT_SHA
+              value: "${GIT_SHA}"
+      containers:
+        - name: build
+          image: python:3.13
+          imagePullPolicy: Always
+          workingDir: /workspace
           volumeMounts:
-            - name: postfix-state
+            - name: heartbeat
+              mountPath: /heartbeat
+            - name: heavyedge-run
               mountPath: /var/run/heavyedge
-            - name: gmail-smtp-relay
-              mountPath: /run/secrets/gmail
-              readOnly: true
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/bash
+                  - -c
+                  - |
+                    if [ ! -f /heartbeat/build-success ] && \
+                       [ ! -f /heartbeat/build-failure ]; then
+                      touch /heartbeat/build-cancelled
+                    fi
+          resources:
+            requests:
+              memory: "32Gi"
+              cpu: "${CPU_REQUEST}"
+            limits:
+              memory: "32Gi"
+              cpu: "${CPU_REQUEST}"
+          command: ["bash", "-euc"]
+          args:
+            - |
+              heartbeat_dir=/heartbeat
+              current_step_file="$heartbeat_dir/current-step"
+
+              set_current_step() {
+                printf '%s\n' "$1" > "$current_step_file"
+              }
+
+              set_current_step "Container setup"
+              touch "$heartbeat_dir/build-started"
+              while true; do
+                touch "$heartbeat_dir/heartbeat"
+                sleep 15
+              done &
+              heartbeat_pid=$!
+
+              mark_check_as_failed() {
+                exit_code=$?
+                trap - ERR
+                printf '%s\n' "$exit_code" > "$heartbeat_dir/failure-exit-code"
+                kill "$heartbeat_pid" 2>/dev/null || true
+                touch "$heartbeat_dir/build-failure"
+                for _ in $(seq 1 60); do
+                  [ -f "$heartbeat_dir/check-finalized" ] && break
+                  sleep 1
+                done
+                exit "$exit_code"
+              }
+              trap mark_check_as_failed ERR
+
+              update_check() {
+                local check_title
+                check_title="$3"
+                if ! bash -euo pipefail .github/scripts/check-run.sh "$@"; then
+                  echo "Could not update the check run: $check_title" >&2
+                  return 1
+                fi
+              }
+
+              run_step() {
+                local step_name exit_code
+                step_name="$1"
+                shift
+                set_current_step "$step_name"
+
+                if [ -f .github/scripts/check-run.sh ]; then
+                  update_check in_progress "" "${step_name} started" || true
+                fi
+
+                if "$@"; then
+                  if [ -f .github/scripts/check-run.sh ]; then
+                    update_check in_progress "" "${step_name} succeeded" || true
+                  fi
+                  return 0
+                else
+                  exit_code=$?
+                fi
+
+                printf '%s\n' "$exit_code" > "$heartbeat_dir/failure-exit-code"
+                if [ -f .github/scripts/check-run.sh ] && \
+                   update_check completed failure "${step_name} failed" \
+                     "${step_name} exited with status ${exit_code}."; then
+                  touch "$heartbeat_dir/check-finalized"
+                fi
+                return "$exit_code"
+              }
+
+              install_dependencies() {
+                apt-get update || return $?
+                apt-get install -y --no-install-recommends \
+                  ca-certificates curl git gzip openssl tar || return $?
+              }
+
+              checkout_source() {
+                git init . || return $?
+                git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git" || return $?
+                git fetch --depth 1 origin "${GIT_SHA}" || return $?
+                git checkout --detach FETCH_HEAD || return $?
+                git submodule update --init --recursive --depth 1 || return $?
+              }
+
+              run_step "Container setup" install_dependencies
+              run_step "Source checkout" checkout_source
+
+              run_step "Build environment setup" bash -euo pipefail ./setup.sh
+
+              run_step "Build" bash -euo pipefail .github/k8s/build.sh
+
+              if [ "$GITHUB_EVENT_NAME" = "release" ]; then
+                run_step "Hugging Face deployment" \
+                  bash -euo pipefail .github/k8s/retry.sh --attempts 3 --sleep 60 "Hugging Face deployment" \
+                    bash -euo pipefail .github/k8s/upload-huggingface.sh
+                run_step "Examples artifact upload" \
+                  bash -euo pipefail .github/k8s/retry.sh --attempts 3 --sleep 60 "Examples artifact upload" \
+                    bash -euo pipefail .github/k8s/upload-artifact.sh examples
+                run_step "Benchmarks artifact upload" \
+                  bash -euo pipefail .github/k8s/retry.sh --attempts 3 --sleep 60 "Benchmarks artifact upload" \
+                    bash -euo pipefail .github/k8s/upload-artifact.sh benchmarks
+              fi
+
+              set_current_step "Finalizing job"
+              if update_check completed success "Build completed successfully" \
+                   "All build-container steps completed successfully."; then
+                touch "$heartbeat_dir/check-finalized"
+              fi
+              bash -euo pipefail .github/k8s/heartbeat.sh finish success "$heartbeat_pid"
+          envFrom:
+            - secretRef:
+                name: github-app
+            - secretRef:
+                name: gdrive
+            - secretRef:
+                name: huggingface-token
+            - configMapRef:
+                name: github-config
+          env:
+            - name: GIT_SHA
+              value: "${GIT_SHA}"
