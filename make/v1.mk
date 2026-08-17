@@ -182,8 +182,8 @@ examples/v1/phi.ipynb: benchmarks/v1/phi.csv benchmarks/v1/phi-profiles.h5 bench
 examples/v1/classifier.ipynb: benchmarks/v1/dimless.csv $(foreach method,$(CALIBRATION_METHODS_v1),benchmarks/v1/phi.minirocket.$(method).csv) .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@
 
-# examples/v1/shape_features.ipynb: examples/v1/dimless.csv examples/v1/shape_features/minirocket.sigmoid.csv .FORCE
-# 	jupyter nbconvert --to notebook --execute --inplace $@
+examples/v1/shape_features.ipynb: _temp/v1/dimless.csv _temp/v1/shape_features/mean_profiles/minirocket.sigmoid.csv .FORCE
+	jupyter nbconvert --to notebook --execute --inplace $@
 
 # examples/v1/bo.ipynb: examples/v1/umap-embedding.csv examples/v1/BO-idxs.csv $(foreach method,$(ACQUISITION_METHODS),benchmarks/v1/Bootstrap.BO.$(method).csv) .FORCE
 # 	jupyter nbconvert --to notebook --execute --inplace $@
