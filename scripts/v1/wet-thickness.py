@@ -4,23 +4,12 @@ import pathlib
 
 import pandas as pd
 import pint
-from heavyedge import ProfileData
 
 parser = argparse.ArgumentParser(description="Write wet thickness data.")
-parser.add_argument("profiles", type=pathlib.Path, help="Profile data directory.")
 parser.add_argument("pv", type=pathlib.Path, help="Process variable csv file")
 parser.add_argument("metadata", type=pathlib.Path, help="datapackage.json file")
 parser.add_argument("-o", "--out", type=pathlib.Path, help="Output csv file")
 args = parser.parse_args()
-
-
-def count_profiles(profiles_dir):
-    paths = sorted(profiles_dir.glob("*.h5"))
-    num_profiles = []
-    for path in paths:
-        with ProfileData(path) as profiles:
-            num_profiles.append(profiles.shape()[0])
-    return num_profiles
 
 
 def read_pv(pv_csv_path, datapackage_json_path):
@@ -55,12 +44,8 @@ def read_pv(pv_csv_path, datapackage_json_path):
     return df
 
 
-num_profiles = count_profiles(args.profiles)
 df = read_pv(args.pv, args.metadata)
 wt = df["flow_rate_per_width"] / df["coating_speed"]
 wt = wt.apply(lambda x: x.to("mm").magnitude).rename("wet_thickness [mm]")
 
-assert len(num_profiles) == len(wt)
-
-wt = wt.repeat(num_profiles)
 wt.to_csv(args.out, index=False)

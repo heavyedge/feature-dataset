@@ -45,8 +45,10 @@ jobs:
 
     steps:
 
-      - name: get repo
-        uses: actions/checkout@v3
+      - name: Checkout repository and submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
 
       - name: set up Python
         uses: actions/setup-python@v4
