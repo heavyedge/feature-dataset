@@ -105,6 +105,8 @@ jobs:
             --from-literal=GITHUB_RELEASE_ID="${{ github.event.release.id }}" \
             --from-literal=GITHUB_RELEASE_TAG_NAME="${{ github.event.release.tag_name }}" \
             --from-literal=GITHUB_CHECK_RUN_ID="${{ steps.checks.outputs.k8s-check-run-id }}" \
+            --from-literal=MAKE_JOBS="${{ vars.MAKE_JOBS }}" \
+            --from-literal=FEATURE_JOBS="${{ vars.FEATURE_JOBS }}" \
             --namespace="${{ secrets.KUBE_NAMESPACE }}" \
             --dry-run=client -o yaml | kubectl apply -f -
 
@@ -118,8 +120,6 @@ jobs:
           TTL_SECONDS_AFTER_FINISHED: ${{ vars.TTL_SECONDS_AFTER_FINISHED }}
           MLXP_ZONE: ${{ secrets.MLXP_ZONE }}
           CPU_REQUEST: ${{ vars.CPU_REQUEST }}
-          MAKE_JOBS: ${{ vars.MAKE_JOBS }}
-          FEATURE_JOBS: ${{ vars.FEATURE_JOBS }}
         run: |
           event_name="${{ github.event_name }}"
           job_name="feature-dataset.${GIT_SHA::7}-${event_name//_/}.${{ github.run_id }}-${{ github.run_attempt }}"
