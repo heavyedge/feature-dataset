@@ -98,13 +98,13 @@ $(foreach \
 	) \
 )
 
-datasets/v1/shape_features/all_profiles/%.csv: _temp/v1/shape_features/all_profiles/%.minirocket.sigmoid.csv
+datasets/v1/shape_features/all_profiles/%.csv: _data/v1/process_variables/all_profiles/%.csv _temp/v1/shape_features/all_profiles/%.minirocket.sigmoid.csv
 	mkdir -p $(@D)
-	cp $< $@
+	python3 -c "import pandas as pd; path1, path2 = '$^'.split(); df1 = pd.read_csv(path1, dtype=str); df2 = pd.read_csv(path2, dtype=str); df2.insert(0, 'name', df1['name']); df2.to_csv('$@', index=False)"
 
-datasets/v1/shape_features/mean_profiles/%.csv: _temp/v1/shape_features/mean_profiles/%.minirocket.sigmoid.csv
+datasets/v1/shape_features/mean_profiles/%.csv: _data/v1/process_variables/mean_profiles/%.csv _temp/v1/shape_features/mean_profiles/%.minirocket.sigmoid.csv
 	mkdir -p $(@D)
-	cp $< $@
+	python3 -c "import pandas as pd; path1, path2 = '$^'.split(); df1 = pd.read_csv(path1, dtype=str); df2 = pd.read_csv(path2, dtype=str); df2.insert(0, 'name', df1['name']); df2.to_csv('$@', index=False)"
 
 # Miscellaneous
 
