@@ -196,6 +196,33 @@ spec:
                 return "$exit_code"
               }
 
+              run_nonfatal_step() {
+                local step_name exit_code
+                step_name="$1"
+                shift
+                set_current_step "$step_name"
+
+                if [ -f .github/scripts/check-run.sh ]; then
+                  update_check in_progress "" "${step_name} started" || true
+                fi
+
+                if "$@"; then
+                  if [ -f .github/scripts/check-run.sh ]; then
+                    update_check in_progress "" "${step_name} succeeded" || true
+                  fi
+                  return 0
+                else
+                  exit_code=$?
+                fi
+
+                printf '%s\n' "$exit_code" > "$heartbeat_dir/failure-exit-code"
+                if [ -f .github/scripts/check-run.sh ]; then
+                  update_check in_progress "" "${step_name} failed; continuing" \
+                    "${step_name} exited with status ${exit_code}." || true
+                fi
+                return "$exit_code"
+              }
+
               install_dependencies() {
                 apt-get update || return $?
                 apt-get install -y --no-install-recommends \
@@ -217,19 +244,46 @@ spec:
 
               run_step "Build" bash -euo pipefail .github/k8s/build.sh
 
+              upload_exit_code=0
               if [ "$GITHUB_EVENT_NAME" = "release" ]; then
-                run_step "Hugging Face deployment" \
+                if run_nonfatal_step "Hugging Face deployment" \
                   bash -euo pipefail .github/k8s/retry.sh --attempts 3 --sleep 60 "Hugging Face deployment" \
-                    bash -euo pipefail .github/k8s/upload-huggingface.sh
-                run_step "Examples artifact upload" \
+                    bash -euo pipefail .github/k8s/upload-huggingface.sh; then
+                  :
+                else
+                  upload_exit_code=$?
+                fi
+                if run_nonfatal_step "Examples artifact upload" \
                   bash -euo pipefail .github/k8s/retry.sh --attempts 3 --sleep 60 "Examples artifact upload" \
-                    bash -euo pipefail .github/k8s/upload-artifact.sh examples
-                run_step "Benchmarks artifact upload" \
+                    bash -euo pipefail .github/k8s/upload-artifact.sh examples; then
+                  :
+                else
+                  step_exit_code=$?
+                  if [ "$upload_exit_code" -eq 0 ]; then
+                    upload_exit_code="$step_exit_code"
+                  fi
+                fi
+                if run_nonfatal_step "Benchmarks artifact upload" \
                   bash -euo pipefail .github/k8s/retry.sh --attempts 3 --sleep 60 "Benchmarks artifact upload" \
-                    bash -euo pipefail .github/k8s/upload-artifact.sh benchmarks
+                    bash -euo pipefail .github/k8s/upload-artifact.sh benchmarks; then
+                  :
+                else
+                  step_exit_code=$?
+                  if [ "$upload_exit_code" -eq 0 ]; then
+                    upload_exit_code="$step_exit_code"
+                  fi
+                fi
               fi
 
               set_current_step "Finalizing job"
+              if [ "$upload_exit_code" -ne 0 ]; then
+                if update_check completed failure "Post-build upload failed" \
+                     "One or more post-build uploads failed."; then
+                  touch "$heartbeat_dir/check-finalized"
+                fi
+                bash -euo pipefail .github/k8s/heartbeat.sh finish failure "$heartbeat_pid"
+                exit "$upload_exit_code"
+              fi
               if update_check completed success "Build completed successfully" \
                    "All build-container steps completed successfully."; then
                 touch "$heartbeat_dir/check-finalized"
