@@ -2,14 +2,14 @@
 
 DATASETS_v1 = $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),dataset1,$(shell ls -d _data/v1/profiles/$(1)/dataset* | xargs -n 1 basename))
 CALIBRATION_METHODS_v1 := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),sigmoid,sigmoid isotonic sigmoid_ovo isotonic_ovo temperature)
-HEAVYEDGE_BATCH_SIZE ?= 100
+HEAVYEDGE_BATCH_SIZE ?= 1000
 FEATURE_JOBS ?= 1
 
 ACQUISITION_METHODS := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),EI,EI LCB_kappa_0.1 LCB_kappa_1 LCB_kappa_10 PI)
 RF_N_ESTIMATORS := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),2,300)
 BO_ITER := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),2,50)
-BO_N_SIM := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),1,1000)
-BO_N_BOOTSTRAP := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),1,10000)
+BO_N_SIM := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),1,500)
+BO_N_BOOTSTRAP := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),1,5000)
 
 # Data
 
