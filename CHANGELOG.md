@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0rc3] - Unreleased
+
+### Fixed
+
+- `name` field in dataset csv files are now restored.
+
 ## [1.0.0rc2] - 2026-08-17
 
 ### Fixed
