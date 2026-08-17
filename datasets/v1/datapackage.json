@@ -12,9 +12,9 @@
   "resources": [
     {
     "name": "Profile shape features",
-    "path": "shape_features/profiles/",
+    "path": "shape_features/all_profiles/",
     "title": "Shape features from slot-die coating edge profiles",
-    "description": "Shape features of all profiles. Extracted from 'v1/profiles/' of profile dataset.",
+    "description": "Shape features of all profiles. Extracted from 'v1/profiles/all_profiles/' of profile dataset.",
     "format": "csv",
     "mediatype": "text/csv",
     "type": "table",
@@ -50,7 +50,7 @@
     "name": "Mean profile shape features",
     "path": "shape_features/mean_profiles/",
     "title": "Shape features from mean slot-die coating edge profiles",
-    "description": "Shape features of mean profiles. Extracted from 'v1/mean_profiles/' of profile dataset.",
+    "description": "Shape features of mean profiles. Extracted from 'v1/profiles/mean_profiles/' of profile dataset.",
     "format": "csv",
     "mediatype": "text/csv",
     "type": "table",
