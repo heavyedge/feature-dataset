@@ -106,7 +106,7 @@ datasets/v1/shape_features/mean_profiles/%.csv: _temp/v1/shape_features/mean_pro
 	mkdir -p $(@D)
 	cp $< $@
 
-# # Examples and Benchmarks
+# Miscellaneous
 
 _temp/v1/shape_features/mean_profiles/minirocket.sigmoid.csv: $(foreach dataset,$(call DATASETS_v1,mean_profiles),_temp/v1/shape_features/mean_profiles/$(dataset).minirocket.sigmoid.csv)
 	mkdir -p $(@D)
@@ -119,9 +119,6 @@ _temp/v1/class_proba.csv: $(foreach dataset,$(call DATASETS_v1,mean_profiles),_t
 _temp/v1/mean_profiles.h5: $(foreach dataset,$(call DATASETS_v1,mean_profiles),_temp/v1/mean_profiles/$(dataset).h5)
 	heavyedge merge $^ -o $@
 
-_temp/v1/phi-index.npy: scripts/v1/phi-index.py _temp/v1/shape_features/mean_profiles/minirocket.sigmoid.csv _temp/v1/class_proba.csv
-	python3 $^ -o $@
-
 _temp/v1/dimless.csv: $(foreach dataset,$(call DATASETS_v1,mean_profiles),_data/v1/dimless/mean_profiles/$(dataset).csv)
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd; dfs = [pd.read_csv(path, dtype=str) for path in '$^'.split()]; pd.concat(dfs).to_csv('$@', index=False)"
@@ -132,6 +129,22 @@ _temp/v1/example_index.npy: scripts/v1/filter-dataset.py _temp/v1/dimless.csv
 _temp/v1/shape_loss/%.csv: scripts/v1/shape-loss.py _temp/v1/shape_features/mean_profiles/%.csv
 	mkdir -p $(@D)
 	python3 $^ --lambda_H=0.05 --lambda_b=0.01 --lambda_phi=1 -o $@
+
+# Benchmarks
+
+benchmarks/v1/phi.csv: _temp/v1/shape_features/mean_profiles/minirocket.sigmoid.csv
+	mkdir -p $(@D)
+	python3 -c "import pandas as pd; df = pd.read_csv('$^'); df[['phi']].to_csv('$@', index=False)"
+
+_temp/v1/phi-index.npy: scripts/v1/phi-index.py benchmarks/v1/phi.csv _temp/v1/class_proba.csv
+	python3 $^ -o $@
+
+benchmarks/v1/phi-profiles.h5: _temp/v1/mean_profiles.h5 _temp/v1/phi-index.npy
+	heavyedge filter $^ -o $@
+
+benchmarks/v1/phi-selected.csv: benchmarks/v1/phi.csv _temp/v1/phi-index.npy
+	mkdir -p $(@D)
+	python3 -c "import pandas as pd, numpy as np; df = pd.read_csv('$^'.split()[0]); idx = np.load('$^'.split()[1]); df.iloc[idx].to_csv('$@', index=False)"
 
 benchmarks/v1/MC.BO.EI.csv: scripts/v1/bo-simulate.py _temp/v1/dimless.csv _temp/v1/shape_loss/minirocket.sigmoid.csv
 	mkdir -p $(@D)
@@ -148,17 +161,6 @@ benchmarks/v1/MC.BO.PI.csv: scripts/v1/bo-simulate.py _temp/v1/dimless.csv _temp
 benchmarks/v1/Bootstrap.BO.%.csv: scripts/v1/bo-bootstrap.py benchmarks/v1/MC.BO.%.csv _temp/v1/shape_loss/minirocket.sigmoid.csv
 	python3 $^ --num-bootstrap=$(BO_N_BOOTSTRAP) -o $@
 
-examples/v1/phi-profiles.h5: _temp/v1/mean_profiles.h5 _temp/v1/phi-index.npy
-	heavyedge filter $^ -o $@
-
-examples/v1/phi-features.csv: _temp/v1/shape_features/mean_profiles/minirocket.sigmoid.csv _temp/v1/phi-index.npy
-	mkdir -p $(@D)
-	python3 -c "import pandas as pd, numpy as np; df = pd.read_csv('$^'.split()[0]); idx = np.load('$^'.split()[1]); df.iloc[idx].to_csv('$@', index=False)"
-
-examples/v1/phi-hist.csv: _temp/v1/shape_features/mean_profiles/minirocket.sigmoid.csv
-	mkdir -p $(@D)
-	python3 -c "import pandas as pd, numpy as np; df = pd.read_csv('$^'); counts, edges = np.histogram(df['phi'], bins=40); pd.DataFrame({'counts': np.concatenate([counts, [np.nan]]), 'edges': edges}).to_csv('$@', index=False)"
-
 examples/v1/dimless.csv: _temp/v1/dimless.csv _temp/v1/example_index.npy
 	python3 -c "import pandas as pd, numpy as np; df = pd.read_csv('$^'.split()[0]); idx = np.load('$^'.split()[1]); df.iloc[idx].to_csv('$@', index=False)"
 
@@ -174,7 +176,7 @@ examples/v1/BO-idxs.csv: scripts/v1/bo.py _temp/v1/dimless.csv _temp/v1/shape_lo
 
 # # Notebooks
 
-examples/v1/phi.ipynb: examples/v1/phi-profiles.h5 examples/v1/phi-features.csv examples/v1/phi-hist.csv .FORCE
+examples/v1/phi.ipynb: benchmarks/v1/phi.csv benchmarks/v1/phi-profiles.h5 benchmarks/v1/phi-selected.csv .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@
 
 # examples/v1/classifier.ipynb: examples/v1/dimless.csv $(foreach method,$(CALIBRATION_METHODS_v1),examples/v1/shape_features/minirocket.$(method).csv) .FORCE
