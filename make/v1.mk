@@ -132,6 +132,9 @@ _temp/v1/shape_loss/%.csv: scripts/v1/shape-loss.py _temp/v1/shape_features/mean
 
 # Benchmarks
 
+benchmarks/v1/dimless.csv: _temp/v1/dimless.csv _temp/v1/example_index.npy
+	python3 -c "import pandas as pd, numpy as np; df = pd.read_csv('$^'.split()[0]); idx = np.load('$^'.split()[1]); df.iloc[idx].to_csv('$@', index=False)"
+
 benchmarks/v1/phi.csv: _temp/v1/shape_features/mean_profiles/minirocket.sigmoid.csv
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd; df = pd.read_csv('$^'); df[['phi']].to_csv('$@', index=False)"
@@ -145,6 +148,10 @@ benchmarks/v1/phi-profiles.h5: _temp/v1/mean_profiles.h5 _temp/v1/phi-index.npy
 benchmarks/v1/phi-selected.csv: benchmarks/v1/phi.csv _temp/v1/phi-index.npy
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd, numpy as np; df = pd.read_csv('$^'.split()[0]); idx = np.load('$^'.split()[1]); df.iloc[idx].to_csv('$@', index=False)"
+
+benchmarks/v1/phi.%.csv: _temp/v1/shape_features/mean_profiles/%.csv _temp/v1/example_index.npy
+	mkdir -p $(@D)
+	python3 -c "import pandas as pd, numpy as np; df = pd.read_csv('$^'.split()[0]); idx = np.load('$^'.split()[1]); df.iloc[idx][['phi']].to_csv('$@', index=False)"
 
 benchmarks/v1/MC.BO.EI.csv: scripts/v1/bo-simulate.py _temp/v1/dimless.csv _temp/v1/shape_loss/minirocket.sigmoid.csv
 	mkdir -p $(@D)
@@ -161,13 +168,6 @@ benchmarks/v1/MC.BO.PI.csv: scripts/v1/bo-simulate.py _temp/v1/dimless.csv _temp
 benchmarks/v1/Bootstrap.BO.%.csv: scripts/v1/bo-bootstrap.py benchmarks/v1/MC.BO.%.csv _temp/v1/shape_loss/minirocket.sigmoid.csv
 	python3 $^ --num-bootstrap=$(BO_N_BOOTSTRAP) -o $@
 
-examples/v1/dimless.csv: _temp/v1/dimless.csv _temp/v1/example_index.npy
-	python3 -c "import pandas as pd, numpy as np; df = pd.read_csv('$^'.split()[0]); idx = np.load('$^'.split()[1]); df.iloc[idx].to_csv('$@', index=False)"
-
-examples/v1/shape_features/%.csv: _temp/v1/shape_features/%.csv _temp/v1/example_index.npy
-	mkdir -p $(@D)
-	python3 -c "import pandas as pd, numpy as np; df = pd.read_csv('$^'.split()[0]); idx = np.load('$^'.split()[1]); df.iloc[idx].to_csv('$@', index=False)"
-
 examples/v1/umap-embedding.csv: scripts/v1/embed-umap.py _temp/v1/mean_profiles.h5 _temp/v1/class_proba.csv
 	python3 $^ -o $@
 
@@ -179,8 +179,8 @@ examples/v1/BO-idxs.csv: scripts/v1/bo.py _temp/v1/dimless.csv _temp/v1/shape_lo
 examples/v1/phi.ipynb: benchmarks/v1/phi.csv benchmarks/v1/phi-profiles.h5 benchmarks/v1/phi-selected.csv .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@
 
-# examples/v1/classifier.ipynb: examples/v1/dimless.csv $(foreach method,$(CALIBRATION_METHODS_v1),examples/v1/shape_features/minirocket.$(method).csv) .FORCE
-# 	jupyter nbconvert --to notebook --execute --inplace $@
+examples/v1/classifier.ipynb: benchmarks/v1/dimless.csv $(foreach method,$(CALIBRATION_METHODS_v1),benchmarks/v1/phi.minirocket.$(method).csv) .FORCE
+	jupyter nbconvert --to notebook --execute --inplace $@
 
 # examples/v1/shape_features.ipynb: examples/v1/dimless.csv examples/v1/shape_features/minirocket.sigmoid.csv .FORCE
 # 	jupyter nbconvert --to notebook --execute --inplace $@
