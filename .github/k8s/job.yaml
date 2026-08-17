@@ -1,0 +1,249 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ${JOB_NAME}
+  namespace: ${KUBE_NAMESPACE}
+  annotations:
+    creator: "${KUBE_USERNAME}"
+spec:
+  ttlSecondsAfterFinished: ${TTL_SECONDS_AFTER_FINISHED}
+  backoffLimit: 0
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+        creator: "${KUBE_USERNAME}"
+    spec:
+      nodeSelector:
+          mlx.navercorp.com/zone: ${MLXP_ZONE}
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 600
+      volumes:
+        - name: heartbeat
+          emptyDir: {}
+        - name: heavyedge-run
+          emptyDir: {}
+      initContainers:
+        - name: check-monitor
+          image: python:3.13
+          imagePullPolicy: Always
+          restartPolicy: Always
+          workingDir: /sidecar
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          volumeMounts:
+            - name: heartbeat
+              mountPath: /heartbeat
+            - name: heavyedge-run
+              mountPath: /var/run/heavyedge
+          startupProbe:
+            exec:
+              command: ["/usr/bin/test", "-f", "/heartbeat/sidecar-ready"]
+            periodSeconds: 5
+            failureThreshold: 60
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/bash
+                  - -c
+                  - |
+                    cd /sidecar
+                    for _ in $(seq 1 30); do
+                      bash -euo pipefail .github/k8s/monitor-heartbeat.sh >/dev/null 2>&1 || true
+                      [ -f /heartbeat/check-finalized ] && exit 0
+                      sleep 1
+                    done
+          command: ["bash", "-euc"]
+          args:
+            - |
+              apt-get update
+              apt-get install -y --no-install-recommends ca-certificates curl git openssl
+              git init .
+              if git remote get-url origin >/dev/null 2>&1; then
+                git remote set-url origin "https://github.com/${GITHUB_REPOSITORY}.git"
+              else
+                git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+              fi
+              git fetch --depth 1 origin "${GIT_SHA}"
+              git checkout --detach FETCH_HEAD
+              git submodule update --init --recursive --depth 1
+
+              if [ ! -f /heartbeat/check-started ]; then
+                bash -euo pipefail .github/scripts/check-run.sh in_progress "" "Job has started"
+                touch /heartbeat/check-started
+              fi
+              touch /heartbeat/sidecar-ready
+
+              shutdown_monitor() {
+                exit 0
+              }
+              trap shutdown_monitor TERM INT
+
+              while true; do
+                if ! bash -euo pipefail .github/k8s/monitor-heartbeat.sh; then
+                  echo "Could not update the check run; retrying in 5 seconds." >&2
+                fi
+                sleep 5
+              done
+          envFrom:
+            - secretRef:
+                name: github-app
+            - configMapRef:
+                name: github-config
+          env:
+            - name: GIT_SHA
+              value: "${GIT_SHA}"
+      containers:
+        - name: build
+          image: python:3.13
+          imagePullPolicy: Always
+          workingDir: /workspace
+          volumeMounts:
+            - name: heartbeat
+              mountPath: /heartbeat
+            - name: heavyedge-run
+              mountPath: /var/run/heavyedge
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/bash
+                  - -c
+                  - |
+                    if [ ! -f /heartbeat/build-success ] && \
+                       [ ! -f /heartbeat/build-failure ]; then
+                      touch /heartbeat/build-cancelled
+                    fi
+          resources:
+            requests:
+              memory: "32Gi"
+              cpu: "${CPU_REQUEST}"
+            limits:
+              memory: "32Gi"
+              cpu: "${CPU_REQUEST}"
+          command: ["bash", "-euc"]
+          args:
+            - |
+              heartbeat_dir=/heartbeat
+              current_step_file="$heartbeat_dir/current-step"
+
+              set_current_step() {
+                printf '%s\n' "$1" > "$current_step_file"
+              }
+
+              set_current_step "Container setup"
+              touch "$heartbeat_dir/build-started"
+              while true; do
+                touch "$heartbeat_dir/heartbeat"
+                sleep 15
+              done &
+              heartbeat_pid=$!
+
+              mark_check_as_failed() {
+                exit_code=$?
+                trap - ERR
+                printf '%s\n' "$exit_code" > "$heartbeat_dir/failure-exit-code"
+                kill "$heartbeat_pid" 2>/dev/null || true
+                touch "$heartbeat_dir/build-failure"
+                for _ in $(seq 1 60); do
+                  [ -f "$heartbeat_dir/check-finalized" ] && break
+                  sleep 1
+                done
+                exit "$exit_code"
+              }
+              trap mark_check_as_failed ERR
+
+              update_check() {
+                local check_title
+                check_title="$3"
+                if ! bash -euo pipefail .github/scripts/check-run.sh "$@"; then
+                  echo "Could not update the check run: $check_title" >&2
+                  return 1
+                fi
+              }
+
+              run_step() {
+                local step_name exit_code
+                step_name="$1"
+                shift
+                set_current_step "$step_name"
+
+                if [ -f .github/scripts/check-run.sh ]; then
+                  update_check in_progress "" "${step_name} started" || true
+                fi
+
+                if "$@"; then
+                  if [ -f .github/scripts/check-run.sh ]; then
+                    update_check in_progress "" "${step_name} succeeded" || true
+                  fi
+                  return 0
+                else
+                  exit_code=$?
+                fi
+
+                printf '%s\n' "$exit_code" > "$heartbeat_dir/failure-exit-code"
+                if [ -f .github/scripts/check-run.sh ] && \
+                   update_check completed failure "${step_name} failed" \
+                     "${step_name} exited with status ${exit_code}."; then
+                  touch "$heartbeat_dir/check-finalized"
+                fi
+                return "$exit_code"
+              }
+
+              install_dependencies() {
+                apt-get update || return $?
+                apt-get install -y --no-install-recommends \
+                  ca-certificates curl git gzip openssl tar || return $?
+              }
+
+              checkout_source() {
+                git init . || return $?
+                git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git" || return $?
+                git fetch --depth 1 origin "${GIT_SHA}" || return $?
+                git checkout --detach FETCH_HEAD || return $?
+                git submodule update --init --recursive --depth 1 || return $?
+              }
+
+              run_step "Container setup" install_dependencies
+              run_step "Source checkout" checkout_source
+
+              run_step "Build environment setup" bash -euo pipefail ./setup.sh
+
+              run_step "Build" bash -euo pipefail .github/k8s/build.sh
+
+              if [ "$GITHUB_EVENT_NAME" = "release" ]; then
+                run_step "Hugging Face deployment" \
+                  bash -euo pipefail .github/k8s/retry.sh --attempts 3 --sleep 60 "Hugging Face deployment" \
+                    bash -euo pipefail .github/k8s/upload-huggingface.sh
+                run_step "Examples artifact upload" \
+                  bash -euo pipefail .github/k8s/retry.sh --attempts 3 --sleep 60 "Examples artifact upload" \
+                    bash -euo pipefail .github/k8s/upload-artifact.sh examples
+                run_step "Benchmarks artifact upload" \
+                  bash -euo pipefail .github/k8s/retry.sh --attempts 3 --sleep 60 "Benchmarks artifact upload" \
+                    bash -euo pipefail .github/k8s/upload-artifact.sh benchmarks
+              fi
+
+              set_current_step "Finalizing job"
+              if update_check completed success "Build completed successfully" \
+                   "All build-container steps completed successfully."; then
+                touch "$heartbeat_dir/check-finalized"
+              fi
+              bash -euo pipefail .github/k8s/heartbeat.sh finish success "$heartbeat_pid"
+          envFrom:
+            - secretRef:
+                name: github-app
+            - secretRef:
+                name: gdrive
+            - secretRef:
+                name: huggingface-token
+            - configMapRef:
+                name: github-config
+          env:
+            - name: GIT_SHA
+              value: "${GIT_SHA}"
