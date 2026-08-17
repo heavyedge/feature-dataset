@@ -15,7 +15,7 @@ requirements_pid=$!
 
 (
   if [ "${HEAVYEDGE_TEST_MODE:-}" = "1" ]; then
-      include="--include v1/profiles/all_profiles/dataset1.tar.gz --include v1/profiles/mean_profiles/dataset1.tar.gz --include v1/process_variables/mean_profiles/dataset1.csv --include v1/datapackage.json"
+      include="--include v1/profiles/all_profiles/dataset1.tar.gz --include v1/profiles/mean_profiles/dataset1.tar.gz --include v1/process_variables/mean_profiles/dataset1.csv --include v1/process_variables/all_profiles/dataset1.csv --include v1/datapackage.json"
   else
       include="--include v1/profiles/all_profiles/*.tar.gz --include v1/profiles/mean_profiles/*.tar.gz --include v1/process_variables/mean_profiles/*.csv --include v1/process_variables/all_profiles/*.csv --include v1/datapackage.json"
   fi
@@ -44,3 +44,21 @@ models_pid=$!
 wait "$requirements_pid"
 wait "$profiles_pid"
 wait "$models_pid"
+
+# Postprocess data
+
+## Write dimensionless data
+
+uv pip install --system -r libs/profile-dataset/requirements.txt -r libs/profile-dataset/examples/requirements.txt
+
+mkdir -p _data/v1/dimless/mean_profiles
+for f in _data/v1/process_variables/mean_profiles/*.csv; do
+    out="_data/v1/dimless/mean_profiles/$(basename "$f")"
+    papermill libs/profile-dataset/examples/v1/dimless.ipynb - -p pv_path "$f" -p metadata_path _data/v1/datapackage.json -p out_path "$out" > /dev/null 2>&1
+done
+
+mkdir -p _data/v1/dimless/all_profiles
+for f in _data/v1/process_variables/all_profiles/*.csv; do
+    out="_data/v1/dimless/all_profiles/$(basename "$f")"
+    papermill libs/profile-dataset/examples/v1/dimless.ipynb - -p pv_path "$f" -p metadata_path _data/v1/datapackage.json -p out_path "$out" > /dev/null 2>&1
+done

@@ -5,7 +5,6 @@ CALIBRATION_METHODS_v1 := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),sigmoid,sigmoi
 HEAVYEDGE_BATCH_SIZE ?= 100
 FEATURE_JOBS ?= 1
 
-# PROCESS_VARIABLES_v1 := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),dataset1,$(shell ls _data/v1/process_variables/dataset*.csv | xargs -n 1 basename -s .csv))
 # ACQUISITION_METHODS := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),EI,EI LCB_kappa_0.1 LCB_kappa_1 LCB_kappa_10 PI)
 # RF_N_ESTIMATORS := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),2,300)
 # BO_ITER := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),2,50)
@@ -123,12 +122,12 @@ _temp/v1/mean_profiles.h5: $(foreach dataset,$(call DATASETS_v1,mean_profiles),_
 _temp/v1/phi-index.npy: scripts/v1/phi-index.py _temp/v1/shape_features/mean_profiles/minirocket.sigmoid.csv _temp/v1/class_proba.csv
 	python3 $^ -o $@
 
-# _temp/v1/dimless.csv: scripts/v1/write-dimless.py $(foreach dataset,$(PROCESS_VARIABLES_v1),_data/v1/process_variables/$(dataset).csv) _data/v1/datapackage.json
-# 	mkdir -p $(@D)
-# 	python3 $^ -o $@
+_temp/v1/dimless.csv: $(foreach dataset,$(call DATASETS_v1,mean_profiles),_data/v1/dimless/mean_profiles/$(dataset).csv)
+	mkdir -p $(@D)
+	python3 -c "import pandas as pd; dfs = [pd.read_csv(path, dtype=str) for path in '$^'.split()]; pd.concat(dfs).to_csv('$@', index=False)"
 
-# _temp/v1/example_index.npy: scripts/v1/filter-dataset.py _temp/v1/dimless.csv
-# 	python3 $^ -o $@
+_temp/v1/example_index.npy: scripts/v1/filter-dataset.py _temp/v1/dimless.csv
+	python3 $^ -o $@
 
 # _temp/v1/shape_features/%.csv: $(foreach dataset,$(call DATASETS_v1,mean_profiles),_temp/v1/shape_features/mean_profiles/$(dataset).%.csv)
 # 	mkdir -p $(@D)
