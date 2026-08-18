@@ -3,4 +3,3 @@ heavyedge-classify==1.4.0
 heavyedge-features==1.2.0
 pandas
 pint
-umap-learn
