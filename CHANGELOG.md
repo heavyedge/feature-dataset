@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Feature extractor is updated to `v1.2.0.dev0`.
 
-## [1.0.0rc3] - Unreleased
+## [1.0.0rc3] - 2026-08-18
 
 ### Fixed
 
