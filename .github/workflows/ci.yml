@@ -20,12 +20,9 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: set up uv
-        uses: astral-sh/setup-uv@v5
-
       - name: install dependencies
         run: |
-          uv pip install --system flake8 "black[jupyter]" isort
+          pip install --system flake8 "black[jupyter]" isort
 
       - name: lint with flake8
         run: |
@@ -54,6 +51,9 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.12"
+
+      - name: set up uv
+        uses: astral-sh/setup-uv@v5
 
       - name: set up the environment
         run: HEAVYEDGE_TEST_MODE=1 ./setup.sh
