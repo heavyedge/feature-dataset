@@ -15,20 +15,26 @@ This repository provides scripts to perform feature extraction from each version
 
 ### Cloning the repository
 
-You need:
-
-- `git`
-- Python runtime with `pip`
-
 Run the following commands to clone the repository and install the necessary requirements.
 
 ```sh
 git clone git@github.com:heavyedge/feature-dataset.git
 cd feature-dataset
+```
+
+### Installing Python dependencies
+
+Run:
+
+```sh
 pip install -r requirements.txt
 ```
 
 ### Downloading the prerequisites (Optional)
+
+You need:
+
+- `uv`
 
 Run the following commands to download the prerequisites in the `_data` directory.
 
