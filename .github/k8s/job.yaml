@@ -93,9 +93,9 @@ spec:
               done
           envFrom:
             - secretRef:
-                name: github-app
+                name: feature-dataset-github-app
             - configMapRef:
-                name: github-config
+                name: ${GITHUB_CONFIG_MAP_NAME}
           env:
             - name: GIT_SHA
               value: "${GIT_SHA}"
@@ -293,13 +293,13 @@ spec:
               bash -euo pipefail .github/k8s/heartbeat.sh finish success "$heartbeat_pid"
           envFrom:
             - secretRef:
-                name: github-app
+                name: feature-dataset-github-app
             - secretRef:
-                name: gdrive
+                name: feature-dataset-gdrive
             - secretRef:
-                name: huggingface-token
+                name: feature-dataset-huggingface-token
             - configMapRef:
-                name: github-config
+                name: ${GITHUB_CONFIG_MAP_NAME}
           env:
             - name: GIT_SHA
               value: "${GIT_SHA}"
