@@ -42,6 +42,48 @@
             "type": "number",
             "unit": "none",
             "description": "Global edge shape score"
+          },
+          {
+            "name": "phi_0",
+            "type": "number",
+            "unit": "none",
+            "description": "Global edge shape score for being the 0th type"
+          },
+          {
+            "name": "phi_1",
+            "type": "number",
+            "unit": "none",
+            "description": "Global edge shape score for being the 1st type"
+          },
+          {
+            "name": "phi_2",
+            "type": "number",
+            "unit": "none",
+            "description": "Global edge shape score for being the 2nd type"
+          },
+          {
+            "name": "phi_3",
+            "type": "number",
+            "unit": "none",
+            "description": "Global edge shape score for being the 3rd type"
+          },
+          {
+            "name": "phi_4",
+            "type": "number",
+            "unit": "none",
+            "description": "Global edge shape score for being the 4th type"
+          },
+          {
+            "name": "phi_5",
+            "type": "number",
+            "unit": "none",
+            "description": "Global edge shape score for being the 5th type"
+          },
+          {
+            "name": "phi_6",
+            "type": "number",
+            "unit": "none",
+            "description": "Global edge shape score for being the 6th type"
           }
         ]
       }
@@ -78,6 +120,48 @@
             "type": "number",
             "unit": "none",
             "description": "Global edge shape score"
+          },
+          {
+            "name": "phi_0",
+            "type": "number",
+            "unit": "none",
+            "description": "Global edge shape score for being the 0th type"
+          },
+          {
+            "name": "phi_1",
+            "type": "number",
+            "unit": "none",
+            "description": "Global edge shape score for being the 1st type"
+          },
+          {
+            "name": "phi_2",
+            "type": "number",
+            "unit": "none",
+            "description": "Global edge shape score for being the 2nd type"
+          },
+          {
+            "name": "phi_3",
+            "type": "number",
+            "unit": "none",
+            "description": "Global edge shape score for being the 3rd type"
+          },
+          {
+            "name": "phi_4",
+            "type": "number",
+            "unit": "none",
+            "description": "Global edge shape score for being the 4th type"
+          },
+          {
+            "name": "phi_5",
+            "type": "number",
+            "unit": "none",
+            "description": "Global edge shape score for being the 5th type"
+          },
+          {
+            "name": "phi_6",
+            "type": "number",
+            "unit": "none",
+            "description": "Global edge shape score for being the 6th type"
           }
         ]
       }
