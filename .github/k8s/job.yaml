@@ -250,7 +250,7 @@ spec:
               run_step "Build environment setup" bash -euo pipefail ./setup.sh
 
               run_step "Install dependencies" uv pip install --system -r requirements.txt -r examples/requirements.txt
-              run_step "Build" bash -euo pipefail make -j "$MAKE_JOBS"
+              run_step "Build" make -j "$MAKE_JOBS"
 
               upload_exit_code=0
               if [ "$GITHUB_EVENT_NAME" = "release" ]; then
