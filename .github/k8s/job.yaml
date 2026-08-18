@@ -240,11 +240,17 @@ spec:
               run_step "Container setup" install_dependencies
               run_step "Source checkout" checkout_source
 
-              pip install uv
+              if [ "${GITHUB_EVENT_NAME}" = "release" ]; then
+                  export HEAVYEDGE_TEST_MODE=0
+              else
+                  export HEAVYEDGE_TEST_MODE=1
+              fi
+
+              run_step "Install uv" pip install uv
               run_step "Build environment setup" bash -euo pipefail ./setup.sh
 
-              pip install -r requirements.txt -r examples/requirements.txt
-              run_step "Build" bash -euo pipefail .github/k8s/build.sh
+              run_step "Install dependencies" uv pip install --system -r requirements.txt -r examples/requirements.txt
+              run_step "Build" bash -euo pipefail make -j "$MAKE_JOBS"
 
               upload_exit_code=0
               if [ "$GITHUB_EVENT_NAME" = "release" ]; then
