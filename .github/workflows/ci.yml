@@ -60,6 +60,9 @@ jobs:
         env:
           HUGGINGFACE_TOKEN: ${{ secrets.HUGGINGFACE_TOKEN }}
 
+      - name: install dependencies
+        run: uv pip install --system -r requirements.txt
+
       - name: test build
         run: HEAVYEDGE_TEST_MODE=1 make
 
