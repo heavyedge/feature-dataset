@@ -18,11 +18,11 @@ jobs:
       - name: set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.12"
+          python-version: "3.13"
 
       - name: install dependencies
         run: |
-          pip install --system flake8 "black[jupyter]" isort
+          pip install flake8 "black[jupyter]" isort
 
       - name: lint with flake8
         run: |
