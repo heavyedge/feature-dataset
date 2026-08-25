@@ -136,20 +136,6 @@ benchmarks/v1/class_proba.csv: $(foreach dataset,$(call DATASETS_v1,mean_profile
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd; dfs = [pd.read_csv(path) for path in '$^'.split()]; pd.concat(dfs).to_csv('$@', index=False)"
 
-benchmarks/v1/phi.csv: _temp/v1/shape_features/mean_profiles/minirocket.sigmoid.csv
-	mkdir -p $(@D)
-	python3 -c "import pandas as pd; df = pd.read_csv('$^'); df[['phi']].to_csv('$@', index=False)"
-
-_temp/v1/phi-index.npy: scripts/v1/phi-index.py benchmarks/v1/phi.csv benchmarks/v1/class_proba.csv
-	python3 $^ -o $@
-
-benchmarks/v1/phi-profiles.h5: _temp/v1/mean_profiles.h5 _temp/v1/phi-index.npy
-	mkdir -p $(@D)
-	heavyedge filter $^ -o $@
-
-benchmarks/v1/phi-selected.csv: benchmarks/v1/phi.csv _temp/v1/phi-index.npy
-	python3 -c "import pandas as pd, numpy as np; df = pd.read_csv('$^'.split()[0]); idx = np.load('$^'.split()[1]); df.iloc[idx].to_csv('$@', index=False)"
-
 benchmarks/v1/phi.minirocket.%.csv: _temp/v1/shape_features/mean_profiles/minirocket.%.csv _temp/v1/example_index.npy
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd, numpy as np; df = pd.read_csv('$^'.split()[0]); idx = np.load('$^'.split()[1]); df.iloc[idx][['phi']].to_csv('$@', index=False)"
@@ -178,16 +164,26 @@ benchmarks/v1/BO-idxs.csv: scripts/v1/bo.py _temp/v1/dimless.csv _temp/v1/shape_
 
 # Examples
 
-examples/v1/profiles.h5: _data/v1/profiles/mean_profiles/dataset1/023.h5 _data/v1/profiles/mean_profiles/dataset1/004.h5
+examples/v1/phi.csv: _temp/v1/shape_features/mean_profiles/minirocket.sigmoid.csv
 	mkdir -p $(@D)
-	heavyedge merge $^ -o $@
+	python3 -c "import pandas as pd; df = pd.read_csv('$^'); df[['phi']].to_csv('$@', index=False)"
 
-examples/v1/profiles-class_proba.csv: examples/v1/profiles.h5 _models/classifiers/minirocket.sigmoid.pkl
+_temp/v1/phi-index.npy: scripts/v1/phi-index.py examples/v1/phi.csv benchmarks/v1/class_proba.csv
+	python3 $^ -o $@
+
+examples/v1/phi-profiles.h5: _temp/v1/mean_profiles.h5 _temp/v1/phi-index.npy
+	mkdir -p $(@D)
+	heavyedge filter $^ -o $@
+
+examples/v1/phi-selected.csv: examples/v1/phi.csv _temp/v1/phi-index.npy
+	python3 -c "import pandas as pd, numpy as np; df = pd.read_csv('$^'.split()[0]); idx = np.load('$^'.split()[1]); df.iloc[idx].to_csv('$@', index=False)"
+
+examples/v1/phi-class_proba.csv: examples/v1/phi-profiles.h5 _models/classifiers/minirocket.sigmoid.pkl
 	heavyedge --log-level=INFO classify-predict $^ -o $@
 
 ## Notebooks
 
-examples/v1/phi.ipynb: examples/v1/profiles.h5 examples/v1/profiles-class_proba.csv benchmarks/v1/phi.csv benchmarks/v1/phi-profiles.h5 benchmarks/v1/phi-selected.csv .FORCE
+examples/v1/phi.ipynb: examples/v1/phi-profiles.h5 examples/v1/phi-class_proba.csv examples/v1/phi.csv examples/v1/phi-selected.csv .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@
 
 examples/v1/classifier.ipynb: benchmarks/v1/dimless.csv $(foreach method,$(CALIBRATION_METHODS_v1),benchmarks/v1/phi.minirocket.$(method).csv) .FORCE
