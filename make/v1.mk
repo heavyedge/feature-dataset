@@ -176,7 +176,16 @@ benchmarks/v1/BO-idxs.csv: scripts/v1/bo.py _temp/v1/dimless.csv _temp/v1/shape_
 	mkdir -p $(@D)
 	python3 $^ --init 0 1 --iter $(BO_ITER) -o $@
 
-# # Notebooks
+# Examples
+
+examples/v1/profile.h5: _data/v1/profiles/mean_profiles/dataset1/023.h5
+	mkdir -p $(@D)
+	cp $^ $@
+
+examples/v1/profile-class_proba.csv: examples/v1/profile.h5 _models/classifiers/minirocket.sigmoid.pkl
+	heavyedge --log-level=INFO classify-predict $^ -o $@
+
+## Notebooks
 
 examples/v1/phi.ipynb: benchmarks/v1/phi.csv benchmarks/v1/phi-profiles.h5 benchmarks/v1/phi-selected.csv .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@

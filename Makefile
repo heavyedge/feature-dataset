@@ -17,5 +17,9 @@ clean:
 		[ -d "$$dataset_dir" ] || continue
 		find "$$dataset_dir" -mindepth 1 -maxdepth 1 ! -name datapackage.json -exec rm -rf -- {} +
 	done
+	for example_dir in examples/v*; do
+		[ -d "$$example_dir" ] || continue
+		find "$$example_dir" -mindepth 1 -maxdepth 1 ! -name *.ipynb -exec rm -rf -- {} +
+	done
 
 include make/v1.mk
