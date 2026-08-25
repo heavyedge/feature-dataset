@@ -132,7 +132,7 @@ benchmarks/v1/X.csv: _temp/v1/dimless.csv _temp/v1/example_index.npy
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd, numpy as np; df = pd.read_csv('$^'.split()[0]); idx = np.load('$^'.split()[1]); df[['slurry', 'gap_to_thickness_ratio', 'capillary_number']].iloc[idx].to_csv('$@', index=False)"
 
-benchmarks/v1/class_proba.csv: $(foreach dataset,$(call DATASETS_v1,mean_profiles),_temp/v1/class_proba/mean_profiles/$(dataset).minirocket.sigmoid.csv)
+_temp/v1/class_proba.csv: $(foreach dataset,$(call DATASETS_v1,mean_profiles),_temp/v1/class_proba/mean_profiles/$(dataset).minirocket.sigmoid.csv)
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd; dfs = [pd.read_csv(path) for path in '$^'.split()]; pd.concat(dfs).to_csv('$@', index=False)"
 
@@ -155,20 +155,13 @@ benchmarks/v1/MC.BO.PI.csv: scripts/v1/bo-simulate.py _temp/v1/dimless.csv _temp
 benchmarks/v1/Bootstrap.BO.%.csv: scripts/v1/bo-bootstrap.py benchmarks/v1/MC.BO.%.csv _temp/v1/shape_loss/minirocket.sigmoid.csv
 	python3 $^ --num-bootstrap=$(BO_N_BOOTSTRAP) -o $@
 
-benchmarks/v1/umap-embedding.csv: scripts/v1/embed-umap.py _temp/v1/mean_profiles.h5 benchmarks/v1/class_proba.csv
-	python3 $^ -o $@
-
-benchmarks/v1/BO-idxs.csv: scripts/v1/bo.py _temp/v1/dimless.csv _temp/v1/shape_loss/minirocket.sigmoid.csv
-	mkdir -p $(@D)
-	python3 $^ --init 0 1 --iter $(BO_ITER) -o $@
-
 # Examples
 
 examples/v1/phi.csv: _temp/v1/shape_features/mean_profiles/minirocket.sigmoid.csv
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd; df = pd.read_csv('$^'); df[['phi']].to_csv('$@', index=False)"
 
-_temp/v1/phi-index.npy: scripts/v1/phi-index.py examples/v1/phi.csv benchmarks/v1/class_proba.csv
+_temp/v1/phi-index.npy: scripts/v1/phi-index.py examples/v1/phi.csv _temp/v1/class_proba.csv
 	python3 $^ -o $@
 
 examples/v1/phi-profiles.h5: _temp/v1/mean_profiles.h5 _temp/v1/phi-index.npy
@@ -181,6 +174,17 @@ examples/v1/phi-selected.csv: examples/v1/phi.csv _temp/v1/phi-index.npy
 examples/v1/phi-class_proba.csv: examples/v1/phi-profiles.h5 _models/classifiers/minirocket.sigmoid.pkl
 	heavyedge --log-level=INFO classify-predict $^ -o $@
 
+examples/v1/profile_types.csv: _temp/v1/class_proba.csv
+	mkdir -p $(@D)
+	python3 -c "import pandas as pd; types = pd.read_csv('$<').values.argmax(axis=1); pd.DataFrame(types, columns=['type']).to_csv('$@', index=False)"
+
+examples/v1/umap-embedding.csv: scripts/v1/embed-umap.py _temp/v1/mean_profiles.h5 _temp/v1/class_proba.csv
+	python3 $^ -o $@
+
+examples/v1/BO-idxs.csv: scripts/v1/bo.py _temp/v1/dimless.csv _temp/v1/shape_loss/minirocket.sigmoid.csv
+	mkdir -p $(@D)
+	python3 $^ --init 0 1 --iter $(BO_ITER) -o $@
+
 ## Notebooks
 
 examples/v1/phi.ipynb: examples/v1/phi-profiles.h5 examples/v1/phi-class_proba.csv examples/v1/phi.csv examples/v1/phi-selected.csv .FORCE
@@ -192,5 +196,5 @@ examples/v1/classifier.ipynb: benchmarks/v1/X.csv $(foreach method,$(CALIBRATION
 examples/v1/shape_features.ipynb: _temp/v1/dimless.csv _temp/v1/shape_features/mean_profiles/minirocket.sigmoid.csv .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@
 
-examples/v1/bo.ipynb: benchmarks/v1/class_proba.csv benchmarks/v1/umap-embedding.csv benchmarks/v1/BO-idxs.csv $(foreach method,$(ACQUISITION_METHODS),benchmarks/v1/Bootstrap.BO.$(method).csv) .FORCE
+examples/v1/bo.ipynb: examples/v1/profile_types.csv examples/v1/umap-embedding.csv examples/v1/BO-idxs.csv $(foreach method,$(ACQUISITION_METHODS),benchmarks/v1/Bootstrap.BO.$(method).csv) .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@
