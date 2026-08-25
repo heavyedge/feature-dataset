@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `examples/v1/phi.ipynb` now displayes class probability of an example profile and its projection.
 
+### Fixed
+
+**v1**
+
+- `examples/v1/phi.ipynb` now displayes example profiles of phi distribution in correct order.
+
 ## [1.1.0] - 2026-08-18
 
 **v1**
