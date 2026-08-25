@@ -2,7 +2,9 @@ _data
 _models
 _temp
 benchmarks
+benchmarks-*
 examples/v*/*
+examples-*
 !examples/v*/*.ipynb
 datasets/v*/*
 !datasets/v*/datapackage.json
