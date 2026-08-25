@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **v1**
 
 - `examples/v1/phi.ipynb` now displayes class probability of an example profile and its projection.
+- `examples/v1/shape_loss.ipynb` is added.
 
 ### Fixed
 

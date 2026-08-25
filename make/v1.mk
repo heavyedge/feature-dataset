@@ -126,6 +126,10 @@ _temp/v1/shape_loss/minirocket.%.csv: scripts/v1/shape-loss.py _temp/v1/shape_fe
 	mkdir -p $(@D)
 	python3 $^ --lambda_H=0.05 --lambda_b=0.01 --lambda_phi=1 -o $@
 
+_temp/v1/local_shape_loss/minirocket.%.csv: scripts/v1/shape-loss.py _temp/v1/shape_features/mean_profiles/minirocket.%.csv
+	mkdir -p $(@D)
+	python3 $^ --lambda_H=0.05 --lambda_b=0.01 --lambda_phi=0 -o $@
+
 # Benchmarks
 
 benchmarks/v1/X.csv: _temp/v1/dimless.csv _temp/v1/example_index.npy
@@ -174,6 +178,12 @@ examples/v1/phi-selected.csv: examples/v1/phi.csv _temp/v1/phi-index.npy
 examples/v1/phi-class_proba.csv: examples/v1/phi-profiles.h5 _models/classifiers/minirocket.sigmoid.pkl
 	heavyedge --log-level=INFO classify-predict $^ -o $@
 
+_temp/v1/shape_loss/5p_idx.npy: _temp/v1/shape_loss/minirocket.sigmoid.csv
+	python3 -c "import numpy as np, pandas as pd; losses = pd.read_csv('$<')['shape_loss'].to_numpy(); threshold = np.percentile(losses, 5); np.save('$@', np.where(losses <= threshold)[0])"
+
+_temp/v1/local_shape_loss/5p_idx.npy: _temp/v1/local_shape_loss/minirocket.sigmoid.csv
+	python3 -c "import numpy as np, pandas as pd; losses = pd.read_csv('$<')['shape_loss'].to_numpy(); threshold = np.percentile(losses, 5); np.save('$@', np.where(losses <= threshold)[0])"
+
 examples/v1/profile_types.csv: _temp/v1/class_proba.csv
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd; types = pd.read_csv('$<').values.argmax(axis=1); pd.DataFrame(types, columns=['type']).to_csv('$@', index=False)"
@@ -185,6 +195,14 @@ examples/v1/BO-idxs.csv: scripts/v1/bo.py _temp/v1/dimless.csv _temp/v1/shape_lo
 	mkdir -p $(@D)
 	python3 $^ --init 0 1 --iter $(BO_ITER) -o $@
 
+examples/v1/shape_loss_5p_profiles.h5: _temp/v1/mean_profiles.h5 _temp/v1/shape_loss/5p_idx.npy
+	mkdir -p $(@D)
+	heavyedge filter $^ -o $@
+
+examples/v1/local_shape_loss_5p_profiles.h5: _temp/v1/mean_profiles.h5 _temp/v1/local_shape_loss/5p_idx.npy
+	mkdir -p $(@D)
+	heavyedge filter $^ -o $@
+
 ## Notebooks
 
 examples/v1/phi.ipynb: examples/v1/phi-profiles.h5 examples/v1/phi-class_proba.csv examples/v1/phi.csv examples/v1/phi-selected.csv .FORCE
@@ -194,6 +212,9 @@ examples/v1/classifier.ipynb: benchmarks/v1/X.csv $(foreach method,$(CALIBRATION
 	jupyter nbconvert --to notebook --execute --inplace $@
 
 examples/v1/shape_features.ipynb: _temp/v1/dimless.csv _temp/v1/shape_features/mean_profiles/minirocket.sigmoid.csv .FORCE
+	jupyter nbconvert --to notebook --execute --inplace $@
+
+examples/v1/shape_loss.ipynb: examples/v1/shape_loss_5p_profiles.h5 examples/v1/local_shape_loss_5p_profiles.h5 .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@
 
 examples/v1/bo.ipynb: examples/v1/profile_types.csv examples/v1/umap-embedding.csv examples/v1/BO-idxs.csv $(foreach method,$(ACQUISITION_METHODS),benchmarks/v1/Bootstrap.BO.$(method).csv) .FORCE
