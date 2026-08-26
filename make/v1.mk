@@ -108,6 +108,14 @@ datasets/v1/shape_features/mean_profiles/%.csv: _data/v1/process_variables/mean_
 
 # Miscellaneous
 
+_temp/v1/shape_features/mean_profiles.csv: $(foreach dataset,$(call DATASETS_v1,mean_profiles),datasets/v1/shape_features/mean_profiles/$(dataset).csv)
+	mkdir -p $(@D)
+	python3 -c "import pandas as pd; dfs = [pd.read_csv(path) for path in '$^'.split()]; pd.concat(dfs).to_csv('$@', index=False)"
+
+_temp/v1/shape_features/all_profiles.csv: $(foreach dataset,$(call DATASETS_v1,all_profiles),datasets/v1/shape_features/all_profiles/$(dataset).csv)
+	mkdir -p $(@D)
+	python3 -c "import pandas as pd; dfs = [pd.read_csv(path) for path in '$^'.split()]; pd.concat(dfs).to_csv('$@', index=False)"
+
 _temp/v1/shape_features/mean_profiles/minirocket.%.csv: $(foreach dataset,$(call DATASETS_v1,mean_profiles),_temp/v1/shape_features/mean_profiles/$(dataset).minirocket.%.csv)
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd; dfs = [pd.read_csv(path) for path in '$^'.split()]; pd.concat(dfs).to_csv('$@', index=False)"
@@ -115,11 +123,15 @@ _temp/v1/shape_features/mean_profiles/minirocket.%.csv: $(foreach dataset,$(call
 _temp/v1/mean_profiles.h5: $(foreach dataset,$(call DATASETS_v1,mean_profiles),_temp/v1/mean_profiles/$(dataset).h5)
 	heavyedge merge $^ -o $@
 
-_temp/v1/dimless.csv: $(foreach dataset,$(call DATASETS_v1,mean_profiles),_data/v1/dimless/mean_profiles/$(dataset).csv)
+_temp/v1/dimless.mean_profiles.csv: $(foreach dataset,$(call DATASETS_v1,mean_profiles),_data/v1/dimless/mean_profiles/$(dataset).csv)
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd; dfs = [pd.read_csv(path, dtype=str) for path in '$^'.split()]; pd.concat(dfs).to_csv('$@', index=False)"
 
-_temp/v1/example_index.npy: scripts/v1/filter-dataset.py _temp/v1/dimless.csv
+_temp/v1/dimless.all_profiles.csv: $(foreach dataset,$(call DATASETS_v1,all_profiles),_data/v1/dimless/all_profiles/$(dataset).csv)
+	mkdir -p $(@D)
+	python3 -c "import pandas as pd; dfs = [pd.read_csv(path, dtype=str) for path in '$^'.split()]; pd.concat(dfs).to_csv('$@', index=False)"
+
+_temp/v1/example_index.%.npy: scripts/v1/filter-dataset.py _temp/v1/dimless.%.csv
 	python3 $^ -o $@
 
 _temp/v1/shape_loss/minirocket.%.csv: scripts/v1/shape-loss.py _temp/v1/shape_features/mean_profiles/minirocket.%.csv
@@ -136,19 +148,19 @@ _temp/v1/class_proba.csv: $(foreach dataset,$(call DATASETS_v1,mean_profiles),_t
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd; dfs = [pd.read_csv(path) for path in '$^'.split()]; pd.concat(dfs).to_csv('$@', index=False)"
 
-benchmarks/v1/phi.minirocket.%.csv: _temp/v1/shape_features/mean_profiles/minirocket.%.csv _temp/v1/example_index.npy
+benchmarks/v1/phi.minirocket.%.csv: _temp/v1/shape_features/mean_profiles/minirocket.%.csv _temp/v1/example_index.mean_profiles.npy
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd, numpy as np; df = pd.read_csv('$^'.split()[0]); idx = np.load('$^'.split()[1]); df.iloc[idx][['phi']].to_csv('$@', index=False)"
 
-benchmarks/v1/MC.BO.EI.csv: scripts/v1/bo-simulate.py _temp/v1/dimless.csv _temp/v1/shape_loss/minirocket.sigmoid.csv
+benchmarks/v1/MC.BO.EI.csv: scripts/v1/bo-simulate.py _temp/v1/dimless.mean_profiles.csv _temp/v1/shape_loss/minirocket.sigmoid.csv
 	mkdir -p $(@D)
 	python3 $^ --acquisition=EI --n-estimators=$(RF_N_ESTIMATORS) --n-sim=$(BO_N_SIM) --n-jobs=$(FEATURE_JOBS) -o $@
 
-benchmarks/v1/MC.BO.LCB_kappa_%.csv: scripts/v1/bo-simulate.py _temp/v1/dimless.csv _temp/v1/shape_loss/minirocket.sigmoid.csv
+benchmarks/v1/MC.BO.LCB_kappa_%.csv: scripts/v1/bo-simulate.py _temp/v1/dimless.mean_profiles.csv _temp/v1/shape_loss/minirocket.sigmoid.csv
 	mkdir -p $(@D)
 	python3 $^ --acquisition=LCB --kappa=$* --n-estimators=$(RF_N_ESTIMATORS) --n-sim=$(BO_N_SIM) --n-jobs=$(FEATURE_JOBS) -o $@
 
-benchmarks/v1/MC.BO.PI.csv: scripts/v1/bo-simulate.py _temp/v1/dimless.csv _temp/v1/shape_loss/minirocket.sigmoid.csv
+benchmarks/v1/MC.BO.PI.csv: scripts/v1/bo-simulate.py _temp/v1/dimless.mean_profiles.csv _temp/v1/shape_loss/minirocket.sigmoid.csv
 	mkdir -p $(@D)
 	python3 $^ --acquisition=PI --n-estimators=$(RF_N_ESTIMATORS) --n-sim=$(BO_N_SIM) --n-jobs=$(FEATURE_JOBS) -o $@
 
@@ -157,13 +169,17 @@ benchmarks/v1/Bootstrap.BO.%.csv: scripts/v1/bo-bootstrap.py benchmarks/v1/MC.BO
 
 # Examples
 
-examples/v1/X.csv: _temp/v1/dimless.csv _temp/v1/example_index.npy
+examples/v1/X.%.csv: _temp/v1/dimless.%.csv _temp/v1/example_index.%.npy
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd, numpy as np; df = pd.read_csv('$^'.split()[0]); idx = np.load('$^'.split()[1]); df[['slurry', 'gap_to_thickness_ratio', 'capillary_number']].iloc[idx].to_csv('$@', index=False)"
 
-examples/v1/phi.csv: _temp/v1/shape_features/mean_profiles/minirocket.sigmoid.csv
+examples/v1/shape_features.%.csv: _temp/v1/shape_features/%.csv _temp/v1/example_index.%.npy
 	mkdir -p $(@D)
-	python3 -c "import pandas as pd; df = pd.read_csv('$^'); df[['phi']].to_csv('$@', index=False)"
+	python3 -c "import pandas as pd, numpy as np; df = pd.read_csv('$^'.split()[0]); idx = np.load('$^'.split()[1]); df.drop(columns='name').iloc[idx].to_csv('$@', index=False)"
+
+examples/v1/phi.csv: $(foreach dataset,$(call DATASETS_v1,mean_profiles),datasets/v1/shape_features/mean_profiles/$(dataset).csv)
+	mkdir -p $(@D)
+	python3 -c "import pandas as pd; dfs = [pd.read_csv(path)['phi'] for path in '$^'.split()]; pd.concat(dfs).to_csv('$@', index=False)"
 
 _temp/v1/phi-index.npy: scripts/v1/phi-index.py examples/v1/phi.csv _temp/v1/class_proba.csv
 	python3 $^ -o $@
@@ -191,7 +207,7 @@ examples/v1/profile_types.csv: _temp/v1/class_proba.csv
 examples/v1/umap-embedding.csv: scripts/v1/embed-umap.py _temp/v1/mean_profiles.h5 _temp/v1/class_proba.csv
 	python3 $^ -o $@
 
-examples/v1/BO-idxs.csv: scripts/v1/bo.py _temp/v1/dimless.csv _temp/v1/shape_loss/minirocket.sigmoid.csv
+examples/v1/BO-idxs.csv: scripts/v1/bo.py _temp/v1/dimless.mean_profiles.csv _temp/v1/shape_loss/minirocket.sigmoid.csv
 	mkdir -p $(@D)
 	python3 $^ --init 0 1 --iter $(BO_ITER) -o $@
 
@@ -203,10 +219,10 @@ examples/v1/local_shape_loss_5p_profiles.h5: _temp/v1/mean_profiles.h5 _temp/v1/
 	mkdir -p $(@D)
 	heavyedge filter $^ -o $@
 
-examples/v1/Xpred_2D.csv: scripts/v1/write-Xpred.py examples/v1/X.csv
+examples/v1/Xpred_2D.csv: scripts/v1/write-Xpred.py examples/v1/X.mean_profiles.csv
 	python3 $^ --target gap_to_thickness_ratio capillary_number --ngrid 30 -o $@
 
-examples/v1/shape_loss.csv: _temp/v1/shape_loss/minirocket.sigmoid.csv _temp/v1/example_index.npy
+examples/v1/shape_loss.csv: _temp/v1/shape_loss/minirocket.sigmoid.csv _temp/v1/example_index.mean_profiles.npy
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd, numpy as np; df = pd.read_csv('$^'.split()[0]); idx = np.load('$^'.split()[1]); df.iloc[idx].to_csv('$@', index=False)"
 
@@ -215,13 +231,13 @@ examples/v1/shape_loss.csv: _temp/v1/shape_loss/minirocket.sigmoid.csv _temp/v1/
 examples/v1/phi.ipynb: examples/v1/phi-profiles.h5 examples/v1/phi-class_proba.csv examples/v1/phi.csv examples/v1/phi-selected.csv .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@
 
-examples/v1/classifier.ipynb: examples/v1/X.csv $(foreach method,$(CALIBRATION_METHODS_v1),benchmarks/v1/phi.minirocket.$(method).csv) .FORCE
+examples/v1/classifier.ipynb: examples/v1/X.mean_profiles.csv $(foreach method,$(CALIBRATION_METHODS_v1),benchmarks/v1/phi.minirocket.$(method).csv) .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@
 
-examples/v1/shape_features.ipynb: _temp/v1/dimless.csv _temp/v1/shape_features/mean_profiles/minirocket.sigmoid.csv .FORCE
+examples/v1/shape_features.ipynb: examples/v1/X.all_profiles.csv examples/v1/shape_features.all_profiles.csv examples/v1/X.mean_profiles.csv examples/v1/shape_features.mean_profiles.csv .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@
 
-examples/v1/shape_loss.ipynb: examples/v1/shape_loss_5p_profiles.h5 examples/v1/local_shape_loss_5p_profiles.h5 examples/v1/X.csv examples/v1/shape_loss.csv examples/v1/Xpred_2D.csv .FORCE
+examples/v1/shape_loss.ipynb: examples/v1/shape_loss_5p_profiles.h5 examples/v1/local_shape_loss_5p_profiles.h5 examples/v1/X.mean_profiles.csv examples/v1/shape_loss.csv examples/v1/Xpred_2D.csv .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@
 
 examples/v1/bo.ipynb: examples/v1/profile_types.csv examples/v1/umap-embedding.csv examples/v1/BO-idxs.csv $(foreach method,$(ACQUISITION_METHODS),benchmarks/v1/Bootstrap.BO.$(method).csv) .FORCE
