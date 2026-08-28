@@ -196,14 +196,14 @@ examples/v1/shape_features.%.csv: _temp/v1/shape_features/%.csv _temp/v1/example
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd, numpy as np; df = pd.read_csv('$^'.split()[0]); idx = np.load('$^'.split()[1]); df.drop(columns='name').iloc[idx].to_csv('$@', index=False)"
 
-examples/v1/phi.csv: _temp/v1/shape_features/mean_profiles.csv
+examples/v1/phi.csv: _temp/v1/shape_features/all_profiles.csv
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd; pd.read_csv('$<')['phi'].to_csv('$@', index=False)"
 
-_temp/v1/phi-index.npy: scripts/v1/phi-index.py examples/v1/phi.csv _temp/v1/class_proba.mean_profiles.csv
+_temp/v1/phi-index.npy: scripts/v1/phi-index.py examples/v1/phi.csv _temp/v1/class_proba.all_profiles.csv
 	python3 $^ -o $@
 
-examples/v1/phi-profiles.h5: _temp/v1/mean_profiles.h5 _temp/v1/phi-index.npy
+examples/v1/phi-profiles.h5: _temp/v1/all_profiles.h5 _temp/v1/phi-index.npy
 	mkdir -p $(@D)
 	heavyedge filter $^ -o $@
 
