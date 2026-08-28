@@ -11,7 +11,7 @@ from multiprocessing import shared_memory
 
 import numpy as np
 import pandas as pd
-from bo_util import EI, LCB, PI, simulate_bo
+from bo_util import EI, LCB, PI, simulate_bo, unique_pool
 
 warnings.filterwarnings("ignore")
 
@@ -45,6 +45,9 @@ def init_worker(
     ell_shm_name,
     ell_shape,
     ell_dtype,
+    profile_to_x_shm_name,
+    profile_to_x_shape,
+    profile_to_x_dtype,
 ):
     """Initialize worker process with shared data"""
     import threadpoolctl
@@ -52,7 +55,8 @@ def init_worker(
     threadpoolctl.threadpool_limits(1)
 
     # Variables to be used within worker processes
-    global X_shm_worker, ell_shm_worker, worker_X, worker_ell
+    global X_shm_worker, ell_shm_worker, profile_to_x_shm_worker
+    global worker_X, worker_ell, worker_profile_to_x
 
     # Attach to shared memory
     X_shm_worker = shared_memory.SharedMemory(name=X_shm_name)
@@ -60,11 +64,22 @@ def init_worker(
 
     ell_shm_worker = shared_memory.SharedMemory(name=ell_shm_name)
     worker_ell = np.ndarray(ell_shape, dtype=ell_dtype, buffer=ell_shm_worker.buf)
+
+    profile_to_x_shm_worker = shared_memory.SharedMemory(name=profile_to_x_shm_name)
+    worker_profile_to_x = np.ndarray(
+        profile_to_x_shape,
+        dtype=profile_to_x_dtype,
+        buffer=profile_to_x_shm_worker.buf,
+    )
     atexit.register(close_worker_shared_memory)
 
 
 def close_worker_shared_memory():
-    for name in ("X_shm_worker", "ell_shm_worker"):
+    for name in (
+        "X_shm_worker",
+        "ell_shm_worker",
+        "profile_to_x_shm_worker",
+    ):
         shm = globals().get(name)
         if shm is not None:
             shm.close()
@@ -77,6 +92,7 @@ def run_simulation(sim_no, idxs0, n_estimators, acquisition_function):
     ret = simulate_bo(
         worker_X,
         worker_ell,
+        worker_profile_to_x,
         idxs,
         idxs0,
         n_estimators,
@@ -85,25 +101,20 @@ def run_simulation(sim_no, idxs0, n_estimators, acquisition_function):
     return sim_no, ret
 
 
-def cleanup_shared_memory(X_shm, ell_shm):
+def cleanup_shared_memory(*shared_memories):
     """Cleanup function that runs at program exit"""
-    try:
-        X_shm.close()
-        X_shm.unlink()
-    except Exception:
-        pass
-
-    try:
-        ell_shm.close()
-        ell_shm.unlink()
-    except Exception:
-        pass
+    for shm in shared_memories:
+        try:
+            shm.close()
+            shm.unlink()
+        except Exception:
+            pass
 
 
-def signal_handler(futures, X_shm, ell_shm, signum, frame):
+def signal_handler(futures, shared_memories, signum, frame):
     for future in futures:
         future.cancel()
-    cleanup_shared_memory(X_shm, ell_shm)
+    cleanup_shared_memory(*shared_memories)
     exit(0)
 
 
@@ -111,12 +122,25 @@ def main():
     args = parse_args()
     df = pd.read_csv(args.X).drop(columns=["name", "cosine_of_contact_angle"])
     df["slurry"] = df["slurry"].astype("category").cat.codes
-    X = df.to_numpy()
-    ell = pd.read_csv(args.ell)["shape_loss"]
+    profile_X = df.to_numpy()
+    ell = pd.read_csv(args.ell)["shape_loss"].to_numpy()
+    if len(profile_X) != len(ell):
+        raise ValueError(
+            "Predictor and loss files must contain the same number of rows "
+            f"(got {len(profile_X)} and {len(ell)})"
+        )
+
+    X, profile_to_x = unique_pool(profile_X)
     X_shm = shared_memory.SharedMemory(create=True, size=X.nbytes)
     np.ndarray(X.shape, dtype=X.dtype, buffer=X_shm.buf)[:] = X
-    ell_shm = shared_memory.SharedMemory(create=True, size=ell.values.nbytes)
-    np.ndarray(ell.shape, dtype=ell.dtype, buffer=ell_shm.buf)[:] = ell.values
+    ell_shm = shared_memory.SharedMemory(create=True, size=ell.nbytes)
+    np.ndarray(ell.shape, dtype=ell.dtype, buffer=ell_shm.buf)[:] = ell
+    profile_to_x_shm = shared_memory.SharedMemory(create=True, size=profile_to_x.nbytes)
+    np.ndarray(
+        profile_to_x.shape,
+        dtype=profile_to_x.dtype,
+        buffer=profile_to_x_shm.buf,
+    )[:] = profile_to_x
     if args.acquisition == "EI":
         acquisition_function = EI
     elif args.acquisition == "LCB":
@@ -127,12 +151,23 @@ def main():
     rng = np.random.default_rng(0)
     idxs0s = [rng.choice(len(X), size=2, replace=False) for _ in range(N_SIM)]
     results = [None] * N_SIM
-    atexit.register(cleanup_shared_memory, X_shm, ell_shm)
+    shared_memories = (X_shm, ell_shm, profile_to_x_shm)
+    atexit.register(cleanup_shared_memory, *shared_memories)
     try:
         with ProcessPoolExecutor(
             max_workers=args.n_jobs,
             initializer=init_worker,
-            initargs=(X_shm.name, X.shape, X.dtype, ell_shm.name, ell.shape, ell.dtype),
+            initargs=(
+                X_shm.name,
+                X.shape,
+                X.dtype,
+                ell_shm.name,
+                ell.shape,
+                ell.dtype,
+                profile_to_x_shm.name,
+                profile_to_x.shape,
+                profile_to_x.dtype,
+            ),
         ) as executor:
             logger.info(f"{args.out}: Initializing simulations...")
             futures = [
@@ -146,13 +181,16 @@ def main():
                 for sim_no, idxs0 in enumerate(idxs0s)
             ]
             signal.signal(
-                signal.SIGTERM, partial(signal_handler, futures, X_shm, ell_shm)
+                signal.SIGTERM,
+                partial(signal_handler, futures, shared_memories),
             )
             signal.signal(
-                signal.SIGINT, partial(signal_handler, futures, X_shm, ell_shm)
+                signal.SIGINT,
+                partial(signal_handler, futures, shared_memories),
             )
             signal.signal(
-                signal.SIGQUIT, partial(signal_handler, futures, X_shm, ell_shm)
+                signal.SIGQUIT,
+                partial(signal_handler, futures, shared_memories),
             )
 
             completed = 0
@@ -170,7 +208,7 @@ def main():
     except KeyboardInterrupt:
         for future in futures:
             future.cancel()
-        cleanup_shared_memory(X_shm, ell_shm)
+        cleanup_shared_memory(*shared_memories)
         sys.exit(0)
 
 

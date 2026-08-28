@@ -3,10 +3,12 @@ import pathlib
 
 import numpy as np
 import pandas as pd
+from bo_util import mean_loss_by_x, unique_pool
 from bootstrap import AF, EF, Top5p, bootstrap_median
 
 parser = argparse.ArgumentParser()
 parser.add_argument("MC", type=pathlib.Path, help="MC csv file.")
+parser.add_argument("X", type=pathlib.Path, help="Predictor csv file.")
 parser.add_argument("ell", type=pathlib.Path, help="Loss csv file.")
 parser.add_argument(
     "--num-bootstrap", type=int, required=True, help="Number of bootstrap samples."
@@ -21,9 +23,22 @@ parser.add_argument("-o", "--out", type=pathlib.Path, help="Output csv file.")
 args = parser.parse_args()
 
 mc = pd.read_csv(args.MC).to_numpy().T
-ell = pd.read_csv(args.ell)["shape_loss"]
+df = pd.read_csv(args.X).drop(columns=["name", "cosine_of_contact_angle"])
+df["slurry"] = df["slurry"].astype("category").cat.codes
+profile_X = df.to_numpy()
+ell = pd.read_csv(args.ell)["shape_loss"].to_numpy()
+if len(profile_X) != len(ell):
+    raise ValueError(
+        "Predictor and loss files must contain the same number of rows "
+        f"(got {len(profile_X)} and {len(ell)})"
+    )
 
-D_5p = np.where(ell <= np.percentile(ell, 5))[0]
+X, profile_to_x = unique_pool(profile_X)
+if mc.size and (mc.min() < 0 or mc.max() >= len(X)):
+    raise ValueError("MC contains an index outside the unique x pool")
+ell_by_x = mean_loss_by_x(ell, profile_to_x, len(X))
+
+D_5p = np.where(ell_by_x <= np.percentile(ell_by_x, 5))[0]
 top5p = Top5p(mc, D_5p)
 ef = EF(top5p)
 af = AF(top5p)

@@ -6,6 +6,8 @@ from sklearn.ensemble import RandomForestRegressor
 
 __all__ = [
     "rf_predict",
+    "unique_pool",
+    "mean_loss_by_x",
     "EI",
     "LCB",
     "PI",
@@ -16,6 +18,40 @@ __all__ = [
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+
+def unique_pool(X):
+    """Return the unique candidate pool and each profile's pool index."""
+    X = np.asarray(X)
+    if X.ndim != 2:
+        raise ValueError("X must be a two-dimensional array")
+    return np.unique(X, axis=0, return_inverse=True)
+
+
+def mean_loss_by_x(ell, profile_to_x, n_x=None):
+    """Aggregate profile losses into the mean objective for each unique x."""
+    ell = np.asarray(ell)
+    profile_to_x = np.asarray(profile_to_x)
+    if ell.ndim != 1 or profile_to_x.ndim != 1:
+        raise ValueError("ell and profile_to_x must be one-dimensional arrays")
+    if len(ell) != len(profile_to_x):
+        raise ValueError("ell and profile_to_x must have the same length")
+    if len(ell) == 0:
+        raise ValueError("ell must contain at least one profile loss")
+    if np.any(profile_to_x < 0):
+        raise ValueError("profile_to_x must contain non-negative indices")
+
+    inferred_n_x = int(profile_to_x.max()) + 1
+    if n_x is None:
+        n_x = inferred_n_x
+    if n_x < inferred_n_x:
+        raise ValueError("n_x is smaller than the largest profile_to_x index")
+
+    counts = np.bincount(profile_to_x, minlength=n_x)
+    if np.any(counts == 0):
+        raise ValueError("every x must have at least one profile loss")
+    sums = np.bincount(profile_to_x, weights=ell, minlength=n_x)
+    return sums / counts
 
 
 def rf_predict(X, rf):
@@ -77,12 +113,24 @@ def bo(X, ell, sample_idxs, n_iter, n_estimators=300, random_state=0):
     return sample_idx
 
 
-def simulate_bo(X, ell, idxs, idxs0, n_estimators, acquisition_function):
+def simulate_bo(
+    X,
+    ell,
+    profile_to_x,
+    idxs,
+    idxs0,
+    n_estimators,
+    acquisition_function,
+):
+    """Select unique x values while revealing all profile losses at each x."""
     rf = RandomForestRegressor(n_estimators=n_estimators)
+    observed_x = np.zeros(len(X), dtype=bool)
+    observed_x[idxs0] = True
 
     for _ in range(len(idxs)):
-        X_train = X[idxs0]
-        y_train = ell[idxs0]
+        observed_profiles = observed_x[profile_to_x]
+        X_train = X[profile_to_x[observed_profiles]]
+        y_train = ell[observed_profiles]
         rf.fit(X_train, y_train)
 
         X_pool = X[idxs]
@@ -93,5 +141,6 @@ def simulate_bo(X, ell, idxs, idxs0, n_estimators, acquisition_function):
 
         next_idx = idxs[next_idx_in_pool]
         idxs0 = np.append(idxs0, next_idx)
+        observed_x[next_idx] = True
         idxs = np.delete(idxs, next_idx_in_pool)
     return idxs0
