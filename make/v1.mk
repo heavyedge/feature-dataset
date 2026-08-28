@@ -241,7 +241,7 @@ examples/v1/local_shape_loss_5p_profiles.h5: _temp/v1/mean_profiles.h5 _temp/v1/
 examples/v1/Xpred_2D.csv: scripts/v1/write-Xpred.py examples/v1/X.mean_profiles.csv
 	python3 $^ --target gap_to_thickness_ratio capillary_number --ngrid 30 -o $@
 
-examples/v1/shape_loss.csv: _temp/v1/shape_loss/mean_profiles/minirocket.sigmoid.csv _temp/v1/example_index.mean_profiles.npy
+examples/v1/shape_loss.csv: _temp/v1/shape_loss/all_profiles/minirocket.sigmoid.csv _temp/v1/example_index.all_profiles.npy
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd, numpy as np; df = pd.read_csv('$^'.split()[0]); idx = np.load('$^'.split()[1]); df.iloc[idx].to_csv('$@', index=False)"
 
@@ -256,7 +256,7 @@ examples/v1/classifier.ipynb: examples/v1/X.mean_profiles.csv $(foreach method,$
 examples/v1/shape_features.ipynb: examples/v1/X.all_profiles.csv examples/v1/shape_features.all_profiles.csv examples/v1/X.mean_profiles.csv examples/v1/shape_features.mean_profiles.csv .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@
 
-examples/v1/shape_loss.ipynb: examples/v1/shape_loss_5p_profiles.h5 examples/v1/local_shape_loss_5p_profiles.h5 examples/v1/X.mean_profiles.csv examples/v1/shape_loss.csv examples/v1/Xpred_2D.csv .FORCE
+examples/v1/shape_loss.ipynb: examples/v1/shape_loss_5p_profiles.h5 examples/v1/local_shape_loss_5p_profiles.h5 examples/v1/X.all_profiles.csv examples/v1/shape_loss.csv examples/v1/Xpred_2D.csv .FORCE
 	jupyter nbconvert --to notebook --execute --inplace $@
 
 examples/v1/bo.ipynb: examples/v1/profile_types.csv examples/v1/umap-embedding.csv examples/v1/BO-idxs.csv $(foreach method,$(ACQUISITION_METHODS),benchmarks/v1/Bootstrap.BO.$(method).csv) .FORCE
