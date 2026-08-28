@@ -6,9 +6,9 @@ HEAVYEDGE_BATCH_SIZE ?= 1000
 FEATURE_JOBS ?= 1
 
 ACQUISITION_METHODS := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),EI,EI LCB_kappa_0.1 LCB_kappa_1 LCB_kappa_10 PI)
-RF_N_ESTIMATORS := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),2,300)
+RF_N_ESTIMATORS := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),2,100)
 BO_ITER := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),2,50)
-BO_N_SIM := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),1,500)
+BO_N_SIM := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),1,100)
 BO_N_BOOTSTRAP := $(if $(filter 1,$(HEAVYEDGE_TEST_MODE)),1,5000)
 
 # Data
@@ -171,19 +171,19 @@ benchmarks/v1/phi/mean_profiles.minirocket.%.csv: _temp/v1/shape_features/mean_p
 	mkdir -p $(@D)
 	python3 -c "import pandas as pd, numpy as np; df = pd.read_csv('$^'.split()[0]); idx = np.load('$^'.split()[1]); df.iloc[idx][['phi']].to_csv('$@', index=False)"
 
-benchmarks/v1/MC.BO.EI.csv: scripts/v1/bo-simulate.py _temp/v1/dimless.mean_profiles.csv _temp/v1/shape_loss/mean_profiles/minirocket.sigmoid.csv
+benchmarks/v1/MC.BO.EI.csv: scripts/v1/bo-simulate.py _temp/v1/dimless.all_profiles.csv _temp/v1/shape_loss/all_profiles/minirocket.sigmoid.csv
 	mkdir -p $(@D)
 	python3 $^ --acquisition=EI --n-estimators=$(RF_N_ESTIMATORS) --n-sim=$(BO_N_SIM) --n-jobs=$(FEATURE_JOBS) -o $@
 
-benchmarks/v1/MC.BO.LCB_kappa_%.csv: scripts/v1/bo-simulate.py _temp/v1/dimless.mean_profiles.csv _temp/v1/shape_loss/mean_profiles/minirocket.sigmoid.csv
+benchmarks/v1/MC.BO.LCB_kappa_%.csv: scripts/v1/bo-simulate.py _temp/v1/dimless.all_profiles.csv _temp/v1/shape_loss/all_profiles/minirocket.sigmoid.csv
 	mkdir -p $(@D)
 	python3 $^ --acquisition=LCB --kappa=$* --n-estimators=$(RF_N_ESTIMATORS) --n-sim=$(BO_N_SIM) --n-jobs=$(FEATURE_JOBS) -o $@
 
-benchmarks/v1/MC.BO.PI.csv: scripts/v1/bo-simulate.py _temp/v1/dimless.mean_profiles.csv _temp/v1/shape_loss/mean_profiles/minirocket.sigmoid.csv
+benchmarks/v1/MC.BO.PI.csv: scripts/v1/bo-simulate.py _temp/v1/dimless.all_profiles.csv _temp/v1/shape_loss/all_profiles/minirocket.sigmoid.csv
 	mkdir -p $(@D)
 	python3 $^ --acquisition=PI --n-estimators=$(RF_N_ESTIMATORS) --n-sim=$(BO_N_SIM) --n-jobs=$(FEATURE_JOBS) -o $@
 
-benchmarks/v1/Bootstrap.BO.%.csv: scripts/v1/bo-bootstrap.py benchmarks/v1/MC.BO.%.csv _temp/v1/shape_loss/mean_profiles/minirocket.sigmoid.csv
+benchmarks/v1/Bootstrap.BO.%.csv: scripts/v1/bo-bootstrap.py benchmarks/v1/MC.BO.%.csv _temp/v1/dimless.all_profiles.csv _temp/v1/shape_loss/all_profiles/minirocket.sigmoid.csv
 	python3 $^ --num-bootstrap=$(BO_N_BOOTSTRAP) -o $@
 
 # Examples
