@@ -190,7 +190,7 @@ benchmarks/v1/Bootstrap.BO.%.csv: scripts/v1/bo-bootstrap.py benchmarks/v1/MC.BO
 
 examples/v1/X.%.csv: _temp/v1/dimless.%.csv _temp/v1/example_index.%.npy
 	mkdir -p $(@D)
-	python3 -c "import pandas as pd, numpy as np; df = pd.read_csv('$^'.split()[0]); idx = np.load('$^'.split()[1]); df[['slurry', 'gap_to_thickness_ratio', 'capillary_number']].iloc[idx].to_csv('$@', index=False)"
+	python3 -c "import pandas as pd, numpy as np; df = pd.read_csv('$^'.split()[0]); idx = np.load('$^'.split()[1]); df[['slurry', 'gap_to_thickness_ratio', 'capillary_number', 'cosine_of_contact_angle']].iloc[idx].to_csv('$@', index=False)"
 
 examples/v1/profiles.h5: _temp/v1/mean_profiles.h5 _temp/v1/example_index.mean_profiles.npy
 	mkdir -p $(@D)
