@@ -113,6 +113,13 @@ def bo(X, ell, sample_idxs, n_iter, n_estimators=300, random_state=0):
     return sample_idx
 
 
+def select_next_idx(acq_values, acquisition_function):
+    """Select the next candidate index for the given acquisition function."""
+    if getattr(acquisition_function, "func", acquisition_function) is LCB:
+        return int(np.argmin(acq_values))
+    return int(np.argmax(acq_values))
+
+
 def simulate_bo(
     X,
     ell,
@@ -137,7 +144,7 @@ def simulate_bo(
         y_best = np.min(y_train)
 
         acq_values = acquisition_function(X_pool, rf, y_best)
-        next_idx_in_pool = np.argmax(acq_values)
+        next_idx_in_pool = select_next_idx(acq_values, acquisition_function)
 
         next_idx = idxs[next_idx_in_pool]
         idxs0 = np.append(idxs0, next_idx)
