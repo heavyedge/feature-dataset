@@ -22,7 +22,7 @@ if [ "${HEAVYEDGE_TEST_MODE:-}" = "1" ]; then
 else
     include="--include v1/profiles/all_profiles/*.tar.gz --include v1/profiles/mean_profiles/*.tar.gz --include v1/process_variables/mean_profiles/*.csv --include v1/process_variables/all_profiles/*.csv --include v1/datapackage.json"
 fi
-hf download heavyedge/profiles --token "$HUGGINGFACE_TOKEN" --repo-type dataset --revision v1.0.0 $include --local-dir _data/
+hf download heavyedge/profiles --token "$HUGGINGFACE_TOKEN" --repo-type dataset --revision v1.0.1 $include --local-dir _data/
 for dataset in _data/v1/profiles/all_profiles/*.tar.gz; do
     stem=$(basename "$dataset" .tar.gz)
     dirname=_data/v1/profiles/all_profiles/"$stem"
